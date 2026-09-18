@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluentry — voice-to-text dictation for Linux</title>
+<meta name="description" content="Hold a key, talk, and the words are typed into whatever app you are using. On-device speech models, optional AI cleanup, nothing leaves your machine.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23e95420'/><rect x='26' y='12' width='12' height='24' rx='6' fill='white'/><path d='M20 32a12 12 0 0 0 24 0' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/><rect x='30' y='44' width='4' height='8' fill='white'/></svg>">
+</head>
+<body>
+
+<header class="bar">
+  <strong>Fluentry</strong>
+  <nav>
+    <a href="#install">Install</a>
+    <a href="#how">How it works</a>
+    <a href="#wayland">Wayland</a>
+    <a href="#privacy">Privacy</a>
+  </nav>
+</header>
+
+<main>
+
+<div class="hero">
+  <h1>Talk anywhere. Fluentry types for you.</h1>
+  <p class="lead">Hold a key, say what you mean, and the words land in whatever app you were already using. Everything can run on your own machine — no account, no upload, no API key.</p>
+  <div class="cta">
+    <a class="button primary" href="#install">Install</a>
+    <a class="button" href="#how">How it works</a>
+  </div>
+</div>
+
+<section id="features">
+  <h2>What it does</h2>
+  <p class="sub">A dictation app built for Linux, not ported onto it.</p>
+  <div class="cards">
+    <div class="card">
+      <h3>On-device speech</h3>
+      <p>Whisper and Parakeet run locally. Parakeet TDT v3 transcribes a short phrase in about 300&nbsp;ms on a CPU.</p>
+    </div>
+    <div class="card">
+      <h3>Your own vocabulary</h3>
+      <p>A custom dictionary fixes the words a model keeps mishearing — names, jargon, spellings — and can delete filler words outright.</p>
+    </div>
+    <div class="card">
+      <h3>Spoken punctuation</h3>
+      <p>Say “literal comma” and get one. Formatting rules, filler-word removal and send-on-phrase all run before the text is inserted.</p>
+    </div>
+    <div class="card">
+      <h3>Optional AI cleanup</h3>
+      <p>Pass each transcript through a language model — local via Ollama or LM&nbsp;Studio, or a remote provider. Off by default.</p>
+    </div>
+    <div class="card">
+      <h3>Desktop-native</h3>
+      <p>Follows your system colour scheme, accent colour, icon theme and UI font. Tray icon, recording overlay, GNOME-style settings.</p>
+    </div>
+    <div class="card">
+      <h3>A local API</h3>
+      <p>Loopback-only HTTP on port 47733, off by default, so other tools on the machine can read history or ask for a transcript.</p>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <p class="sub">Python 3.11 or newer.</p>
+<pre><code>git clone https://github.com/deniswsrosa/Fluentry.git
+cd Fluentry
+pip install -e '.[gui,audio,input,whisper,parakeet]'
+fluentry --check</code></pre>
+  <p><code>--check</code> prints a line per capability and exits non-zero if something essential is missing, so it works in a script too.</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Extra</th><th>Brings in</th><th>Needed for</th></tr>
+      <tr><td><code>gui</code></td><td>PySide6</td><td>the tray, overlay and windows</td></tr>
+      <tr><td><code>audio</code></td><td>sounddevice</td><td>low-latency capture (else <code>pw-record</code>)</td></tr>
+      <tr><td><code>input</code></td><td>evdev, pynput</td><td>global hotkeys</td></tr>
+      <tr><td><code>whisper</code></td><td>faster-whisper</td><td>the Whisper engines</td></tr>
+      <tr><td><code>parakeet</code></td><td>onnx-asr, onnxruntime</td><td>the Parakeet engines</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="how">
+  <h2>How it works</h2>
+  <p class="sub">Each macOS framework replaced with the interface Linux actually uses.</p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>On macOS</th><th>In Fluentry</th></tr>
+      <tr><td>CoreAudio device list</td><td>PipeWire, PulseAudio, ALSA</td></tr>
+      <tr><td>AVAudioEngine capture</td><td>PortAudio, else <code>pw-record</code> / <code>parec</code></td></tr>
+      <tr><td>CGEventTap hotkeys</td><td>evdev, else pynput on X11</td></tr>
+      <tr><td>Accessibility API typing</td><td><code>xdotool</code>, <code>ydotool</code> or <code>wtype</code></td></tr>
+      <tr><td>Keychain</td><td>freedesktop Secret Service</td></tr>
+      <tr><td>MediaRemote</td><td>MPRIS via <code>playerctl</code></td></tr>
+      <tr><td>Login item</td><td><code>~/.config/autostart</code></td></tr>
+      <tr><td>CoreML speech models</td><td>faster-whisper, onnx-asr, sherpa-onnx</td></tr>
+      <tr><td>UserDefaults</td><td><code>$XDG_CONFIG_HOME/fluentry/settings.json</code></td></tr>
+    </table>
+  </div>
+  <p>Every persisted key, enum value and backup field name matches the macOS app, so a FluidVoice backup restores into Fluentry and back again.</p>
+</section>
+
+<section id="wayland">
+  <h2>Wayland, honestly</h2>
+  <p class="sub">Three things Wayland withholds, and what each one means.</p>
+  <div class="note">
+    <p><strong>Typing into other apps.</strong> <code>xdotool</code> reaches XWayland apps only. Install <code>ydotool</code> or <code>wtype</code> for native Wayland apps — or use <em>Copy to Clipboard Only</em>, which works everywhere.</p>
+    <p><strong>Global hotkeys.</strong> A compositor does not hand keystrokes to ordinary clients, so the shortcut needs <code>evdev</code>: add yourself to the <code>input</code> group with <code>sudo usermod -aG input "$USER"</code> and log back in. On X11 nothing is needed.</p>
+    <p><strong>The focused window.</strong> Most compositors do not expose it, so per-app prompts are unavailable there. Hyprland, Sway and KWin do, and are used when present.</p>
+  </div>
+  <p><code>fluentry --check</code> tells you which of these apply on your desktop, rather than letting you discover them by pressing a key and getting nothing.</p>
+</section>
+
+<section id="privacy">
+  <h2>Where your words go</h2>
+  <p class="sub">Nowhere, unless you configure it.</p>
+  <ul>
+    <li>Speech models run on your machine. Transcription needs no network.</li>
+    <li>History is a SQLite database under <code>$XDG_DATA_HOME/fluentry/</code>, and can clear itself after a day, a week, a month or a quarter.</li>
+    <li>API keys go to the freedesktop Secret Service, never to a file in plain text.</li>
+    <li>AI cleanup is off by default. When on, a provider is only ever contacted after you have verified it, and what is stored is a hash of the endpoint-and-key pair — change either and the verification lapses.</li>
+    <li>The local API binds to 127.0.0.1 only and is off until you switch it on.</li>
+  </ul>
+</section>
+
+<section id="project">
+  <h2>The project</h2>
+  <p>Fluentry is a Linux port of <a href="https://github.com/altic-dev/FluidVoice">FluidVoice</a>, the macOS dictation app, rebuilt in Python and PySide6. It is GPL-3.0-or-later, the same licence as the original.</p>
+  <p>915 automated tests cover the port, including end-to-end runs that drive a real dictation from a synthetic keypress through capture, transcription, the text pipeline and into a recording target — plus UI tests that click the actual widgets and sample rendered pixels.</p>
+</section>
+
+</main>
+
+<footer>
+  <div class="inner">
+    Fluentry · GPL-3.0-or-later · derived from <a href="https://github.com/altic-dev/FluidVoice">FluidVoice</a>
+  </div>
+</footer>
+
+</body>
+</html>
