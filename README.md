@@ -1,5 +1,7 @@
 # Fluentry
 
+[Website](https://deniswsrosa.github.io/fluentry-site/)
+
 Hold a key, talk, and the words are typed into whatever app you are using.
 
 Fluentry is a Linux dictation app, rebuilt from the macOS app **FluidVoice**
