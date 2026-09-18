@@ -434,7 +434,7 @@ class DictionaryPage(Page):
 
         layout.addWidget(
             hint_label(
-                'Separate several mishearings with commas: "fluid boys, fluid voice" → '
+                'Separate several mishearings with commas: "fluent tree, fluently" → '
                 '"Fluentry".'
             )
         )

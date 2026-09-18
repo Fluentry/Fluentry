@@ -1,6 +1,6 @@
 """Custom dictionary replacement.
 
-Maps misheard spellings onto the right text ("fluid voice" → "Fluentry") and
+Maps misheard spellings onto the right text ("fluent tree" → "Fluentry") and
 supports whitespace payloads ("new line" → an actual newline). A port of the
 dictionary half of `ASRService`, plus the manual-entry helpers from
 `CustomDictionaryView`.
