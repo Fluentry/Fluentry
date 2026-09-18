@@ -35,6 +35,7 @@ from .settings_types import (
     DictationPromptConfiguration,
     DictationPromptProfile,
     DictationPromptSelection,
+    DictationShortcutSlot,
     MicrophonePriorityEntry,
     MicrophoneSelectionMode,
     HistoryAutoClearInterval,
@@ -2366,6 +2367,98 @@ class SettingsStore:
 
     def has_app_prompt_binding(self, mode: PromptMode, app_bundle_id: str | None) -> bool:
         return self.app_prompt_binding(mode, app_bundle_id) is not None
+
+    # --- resolving which prompt to send ----------------------------------
+
+    #: A prompt may fold the transcript in wherever it likes.
+    TRANSCRIPT_PLACEHOLDER = "${transcript}"
+
+    @staticmethod
+    def combine_base_prompt(base: str, body: str) -> str:
+        """Put the hidden base prompt in front of a custom one, once."""
+        base = base.strip()
+        body = body.strip()
+        if body.lower().startswith(base.lower()):
+            return body  # Already carries it; do not say it twice.
+        return body and f"{base}\n\n{body}" or base
+
+    @staticmethod
+    def strip_base_prompt(base: str, text: str) -> str:
+        """Remove a base prompt an older build folded into a saved profile."""
+        base = base.strip()
+        trimmed = text.strip()
+        if base and trimmed.lower().startswith(base.lower()):
+            return trimmed[len(base) :].strip()
+        return trimmed
+
+    def system_prompt_for_profile_body(self, base: str, body: str) -> str:
+        """A custom prompt, with or without the base in front of it.
+
+        "Send custom prompt only" means exactly that: the built-in
+        instructions are left out rather than silently prepended.
+        """
+        body = body.strip()
+        if self.send_custom_prompt_only:
+            return body
+        return self.combine_base_prompt(base, body)
+
+    def selected_dictation_prompt_profile(self, app_bundle_id: str | None = None):
+        """The prompt profile in force, taking per-app bindings into account."""
+        from ..services.provider_routing import effective_prompt_selection
+
+        selection = effective_prompt_selection(
+            self, DictationShortcutSlot.PRIMARY, app_bundle_id
+        )
+        if selection.kind != "profile":
+            return None
+        return next(
+            (
+                profile
+                for profile in self.dictation_prompt_profiles
+                if profile.id == selection.profile_id
+                and profile.mode.normalized is PromptMode.DICTATE
+            ),
+            None,
+        )
+
+    def effective_dictation_system_prompt(
+        self, base: str, app_bundle_id: str | None = None
+    ) -> str:
+        """The system prompt this dictation should actually carry.
+
+        Order: an explicit Off means none at all; a selected profile wins;
+        otherwise the user's default override, else the built-in base.
+        """
+        from ..services.provider_routing import effective_prompt_selection
+
+        selection = effective_prompt_selection(
+            self, DictationShortcutSlot.PRIMARY, app_bundle_id
+        )
+        if selection.kind == "off":
+            return ""
+
+        profile = self.selected_dictation_prompt_profile(app_bundle_id)
+        if profile is not None:
+            body = self.strip_base_prompt(base, profile.prompt)
+            if body:
+                return self.system_prompt_for_profile_body(base, body)
+
+        override = self.default_dictation_prompt_override
+        if override is not None:
+            trimmed = override.strip()
+            if trimmed:
+                return self.system_prompt_for_profile_body(base, trimmed)
+            return ""
+        return base
+
+    @classmethod
+    def render_dictation_user_message(cls, prompt_text: str, transcript: str) -> str:
+        """Fold the transcript into the prompt, or append it."""
+        if cls.TRANSCRIPT_PLACEHOLDER in prompt_text:
+            return prompt_text.replace(cls.TRANSCRIPT_PLACEHOLDER, transcript)
+        if not prompt_text.strip():
+            return transcript
+        return f"{prompt_text}\n\n{transcript}"
 
     def ai_enhancement_enabled_for_app(self, app_bundle_id: str | None) -> bool:
         """Whether AI cleanup should run for the app now focused.

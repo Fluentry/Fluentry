@@ -344,15 +344,19 @@ class AppState:
         if not route_is_configured(route, self.settings):
             raise LLMError("No verified AI provider is configured.")
 
-        prompt = self.settings.default_dictation_prompt_override
-        if prompt is None:
-            prompt = DEFAULT_DICTATION_PROMPT
+        # A selected prompt profile, a per-app binding and "send custom
+        # prompt only" all decide what goes above the transcript. Reading
+        # the override alone would ignore every one of them.
+        prompt = self.settings.effective_dictation_system_prompt(
+            DEFAULT_DICTATION_PROMPT, context.bundle_id
+        )
+        messages = []
+        if prompt.strip():
+            messages.append({"role": "system", "content": prompt})
+        messages.append({"role": "user", "content": text})
 
         config = LLMConfig(
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": text},
-            ],
+            messages=messages,
             model=route.model,
             base_url=route.base_url,
             api_key=route.api_key,

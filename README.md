@@ -84,7 +84,10 @@ Between the model and your keyboard, a transcript passes through:
 4. **AI cleanup** *(optional, off by default)* — rewrites the transcript with
    a language model, local or remote. Can be forced on or off per
    application, so dictating into a chat client is cleaned up while a coding
-   agent gets the raw transcript.
+   agent gets the raw transcript. Which instructions go with it come from
+   the selected prompt profile, a per-app binding, or your default
+   override — and *Send custom prompt only* leaves the built-in
+   instructions out entirely.
 5. **Formatting rules** and **spoken send** — "send it" can press Return.
 
 ### Text insertion modes
