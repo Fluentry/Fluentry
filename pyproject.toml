@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fluentry"
+version = "1.6.0"
+description = "Open source voice-to-text dictation app for Linux with on-device AI enhancement"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-or-later" }
+dependencies = [
+    "numpy>=1.24",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+gui = ["PySide6-Essentials>=6.6"]
+# Whisper works out of the box; Parakeet needs onnx-asr, and the
+# Nemotron and Cohere exports need sherpa-onnx.
+whisper = ["faster-whisper>=1.0"]
+parakeet = ["onnx-asr>=0.12", "onnxruntime>=1.17", "huggingface_hub>=0.24"]
+onnx = ["sherpa-onnx>=1.10"]
+audio = ["sounddevice>=0.4"]
+input = ["evdev>=1.6", "pynput>=1.7"]
+
+[project.scripts]
+fluentry = "fluentry.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["fluentry*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+addopts = "-m 'not model and not hardware and not display'"
+markers = [
+    "model: needs downloaded speech-model weights",
+    "hardware: needs real audio hardware",
+    "display: needs a running display server",
+]
