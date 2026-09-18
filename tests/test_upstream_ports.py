@@ -397,3 +397,140 @@ def test_a_failed_direct_insert_does_not_strand_text_on_the_clipboard():
 
     typing.type_text("second dictation", mode=TextInsertionMode.STANDARD)
     assert clipboard.read_text() == "something the user copied"
+
+
+# --- issue #977: AI enhancement on or off per app --------------------------
+
+from fluentry.persistence.settings_types import (  # noqa: E402
+    AppAIEnhancement,
+    AppPromptBinding,
+    PromptMode,
+)
+
+
+def bind(app_id: str, override: AppAIEnhancement) -> AppPromptBinding:
+    return AppPromptBinding(
+        mode=PromptMode.DICTATE,
+        app_bundle_id=app_id,
+        app_name=app_id,
+        prompt_id=None,
+        ai_enhancement=override,
+    )
+
+
+def test_an_app_with_no_binding_follows_the_global_switch(settings):
+    settings.enable_ai_processing = True
+    assert settings.ai_enhancement_enabled_for_app("org.gnome.Text") is True
+    settings.enable_ai_processing = False
+    assert settings.ai_enhancement_enabled_for_app("org.gnome.Text") is False
+
+
+def test_inherit_is_the_default_for_a_new_binding(settings):
+    settings.enable_ai_processing = True
+    settings.app_prompt_bindings = [
+        AppPromptBinding(
+            mode=PromptMode.DICTATE,
+            app_bundle_id="org.gnome.text",
+            app_name="Text",
+            prompt_id=None,
+        )
+    ]
+    assert settings.ai_enhancement_enabled_for_app("org.gnome.Text") is True
+
+
+def test_an_app_can_opt_out_while_the_rest_stay_on(settings):
+    """The example from the request: chat cleaned up, coding agent raw."""
+    settings.enable_ai_processing = True
+    settings.app_prompt_bindings = [bind("dev.codex.app", AppAIEnhancement.OFF)]
+
+    assert settings.ai_enhancement_enabled_for_app("dev.codex.app") is False
+    assert settings.ai_enhancement_enabled_for_app("com.slack.Slack") is True
+
+
+def test_an_app_can_opt_in_while_the_global_switch_is_off(settings):
+    settings.enable_ai_processing = False
+    settings.app_prompt_bindings = [bind("com.slack.Slack", AppAIEnhancement.ON)]
+
+    assert settings.ai_enhancement_enabled_for_app("com.slack.Slack") is True
+    assert settings.ai_enhancement_enabled_for_app("dev.codex.app") is False
+
+
+def test_the_override_matches_the_app_id_case_insensitively(settings):
+    settings.enable_ai_processing = True
+    settings.app_prompt_bindings = [bind("org.gnome.text", AppAIEnhancement.OFF)]
+    assert settings.ai_enhancement_enabled_for_app("ORG.GNOME.Text") is False
+
+
+def test_an_unknown_focused_app_falls_back_to_the_global_switch(settings):
+    """Most Wayland compositors do not report the focused window at all."""
+    settings.enable_ai_processing = True
+    settings.app_prompt_bindings = [bind("dev.codex.app", AppAIEnhancement.OFF)]
+    assert settings.ai_enhancement_enabled_for_app(None) is True
+
+
+def test_the_override_survives_a_round_trip(settings):
+    settings.app_prompt_bindings = [bind("dev.codex.app", AppAIEnhancement.OFF)]
+    assert settings.app_prompt_bindings[0].ai_enhancement is AppAIEnhancement.OFF
+
+
+def test_a_binding_written_before_this_existed_still_loads():
+    payload = bind("dev.codex.app", AppAIEnhancement.OFF).to_dict()
+    del payload["aiEnhancement"]
+    assert AppPromptBinding.from_dict(payload).ai_enhancement is AppAIEnhancement.INHERIT
+
+
+def test_the_dictation_skips_the_model_for_an_opted_out_app(settings, tmp_path):
+    """End to end: no provider call, and the raw transcript is typed."""
+    from fluentry.persistence.history_store import TranscriptionHistoryStore
+    from fluentry.platform.text_injection import RecordingBackend, TypingService
+    from fluentry.services.asr_service import ASRService
+    from fluentry.services.providers.base import ScriptedTranscriptionProvider
+    from fluentry.services.text_pipeline import PipelineContext
+
+    settings.enable_ai_processing = True
+    settings.app_prompt_bindings = [bind("dev.codex.app", AppAIEnhancement.OFF)]
+
+    enhanced_calls: list[str] = []
+    backend = RecordingBackend()
+    service = ASRService(
+        settings=settings,
+        provider=ScriptedTranscriptionProvider(responses=["raw words"]),
+        typing_service=TypingService(backend=backend, paste_settle_seconds=0),
+        history_store=TranscriptionHistoryStore(load=False),
+        enhance=lambda text, context: enhanced_calls.append(text) or "REWRITTEN",
+        focus_context=lambda: PipelineContext(
+            app_name="Codex", bundle_id="dev.codex.app", window_title="main.py"
+        ),
+    )
+
+    outcome = service.process_samples([0.2] * 16_000)
+    assert enhanced_calls == [], "the model was called for an opted-out app"
+    assert outcome.was_ai_processed is False
+    assert backend.typed == ["raw words"]
+
+
+def test_the_dictation_still_enhances_elsewhere(settings, tmp_path):
+    from fluentry.persistence.history_store import TranscriptionHistoryStore
+    from fluentry.platform.text_injection import RecordingBackend, TypingService
+    from fluentry.services.asr_service import ASRService
+    from fluentry.services.providers.base import ScriptedTranscriptionProvider
+    from fluentry.services.text_pipeline import PipelineContext
+
+    settings.enable_ai_processing = True
+    settings.app_prompt_bindings = [bind("dev.codex.app", AppAIEnhancement.OFF)]
+
+    backend = RecordingBackend()
+    service = ASRService(
+        settings=settings,
+        provider=ScriptedTranscriptionProvider(responses=["raw words"]),
+        typing_service=TypingService(backend=backend, paste_settle_seconds=0),
+        history_store=TranscriptionHistoryStore(load=False),
+        enhance=lambda text, context: "REWRITTEN",
+        focus_context=lambda: PipelineContext(
+            app_name="Slack", bundle_id="com.slack.Slack", window_title="general"
+        ),
+    )
+
+    outcome = service.process_samples([0.2] * 16_000)
+    assert outcome.was_ai_processed is True
+    assert backend.typed == ["REWRITTEN"]

@@ -82,7 +82,9 @@ Between the model and your keyboard, a transcript passes through:
    replacement deletes the trigger instead.
 3. **Spoken punctuation** — "literal comma" becomes ",".
 4. **AI cleanup** *(optional, off by default)* — rewrites the transcript with
-   a language model, local or remote.
+   a language model, local or remote. Can be forced on or off per
+   application, so dictating into a chat client is cleaned up while a coding
+   agent gets the raw transcript.
 5. **Formatting rules** and **spoken send** — "send it" can press Return.
 
 ### Text insertion modes

@@ -2367,6 +2367,17 @@ class SettingsStore:
     def has_app_prompt_binding(self, mode: PromptMode, app_bundle_id: str | None) -> bool:
         return self.app_prompt_binding(mode, app_bundle_id) is not None
 
+    def ai_enhancement_enabled_for_app(self, app_bundle_id: str | None) -> bool:
+        """Whether AI cleanup should run for the app now focused.
+
+        A per-app override wins over the global switch, so dictating into a
+        coding agent can stay raw while a chat client still gets cleaned up.
+        """
+        binding = self.app_prompt_binding(PromptMode.DICTATE, app_bundle_id)
+        if binding is None:
+            return self.enable_ai_processing
+        return binding.ai_enhancement.resolve(self.enable_ai_processing)
+
     @staticmethod
     def dictation_selection_supports_app_override(selection: DictationPromptSelection) -> bool:
         """Only Default and profile selections can be overridden per app.

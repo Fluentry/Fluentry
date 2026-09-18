@@ -160,6 +160,34 @@ class DictationPromptProfile:
         )
 
 
+class AppAIEnhancement(StrEnum):
+    """Whether AI cleanup runs in one particular app.
+
+    Dictating into a chat client and into a coding agent want opposite
+    answers, and changing the global switch each time is the thing this
+    exists to avoid.
+    """
+
+    INHERIT = "inherit"
+    ON = "on"
+    OFF = "off"
+
+    @property
+    def display_name(self) -> str:
+        return {
+            AppAIEnhancement.INHERIT: "Use the global setting",
+            AppAIEnhancement.ON: "Always on",
+            AppAIEnhancement.OFF: "Always off",
+        }[self]
+
+    def resolve(self, global_enabled: bool) -> bool:
+        if self is AppAIEnhancement.ON:
+            return True
+        if self is AppAIEnhancement.OFF:
+            return False
+        return global_enabled
+
+
 @dataclass
 class AppPromptBinding:
     """Binds a prompt to an application.
@@ -174,6 +202,7 @@ class AppPromptBinding:
     app_name: str
     prompt_id: str | None
     id: str = field(default_factory=lambda: str(uuid.uuid4()).upper())
+    ai_enhancement: AppAIEnhancement = AppAIEnhancement.INHERIT
     created_at: datetime = field(default_factory=now)
     updated_at: datetime = field(default_factory=now)
 
@@ -192,6 +221,7 @@ class AppPromptBinding:
             "appBundleID": self.app_bundle_id,
             "appName": self.app_name,
             "promptID": self.prompt_id,
+            "aiEnhancement": self.ai_enhancement.value,
             "createdAt": iso(self.created_at),
             "updatedAt": iso(self.updated_at),
         }
@@ -204,6 +234,11 @@ class AppPromptBinding:
             app_bundle_id=str(payload.get("appBundleID") or ""),
             app_name=str(payload.get("appName") or ""),
             prompt_id=payload.get("promptID"),
+            # Absent in bindings written before this existed, which is
+            # exactly what "inherit" means.
+            ai_enhancement=AppAIEnhancement.from_raw(
+                payload.get("aiEnhancement"), AppAIEnhancement.INHERIT
+            ),
             created_at=parse_iso(payload.get("createdAt")),
             updated_at=parse_iso(payload.get("updatedAt")),
         )

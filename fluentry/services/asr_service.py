@@ -288,7 +288,8 @@ class ASRService:
         cleaned = self.pipeline.clean(outcome.raw_text, context)
 
         enhanced: str | None = None
-        if self.settings.enable_ai_processing and self._enhance is not None and cleaned.strip():
+        wants_ai = self.settings.ai_enhancement_enabled_for_app(context.bundle_id)
+        if wants_ai and self._enhance is not None and cleaned.strip():
             started = self._clock()
             try:
                 enhanced = self._enhance(cleaned, context)
