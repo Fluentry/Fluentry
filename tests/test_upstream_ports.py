@@ -122,8 +122,14 @@ def history(tmp_path):
     writer.shutdown()
 
 
-def add(store, text: str, days_ago: float):
-    when = datetime.now().astimezone() - timedelta(days=days_ago)
+#: A fixed mid-afternoon moment. Ages are measured from this rather than
+#: from the wall clock, so a run just after midnight cannot push a
+#: "recent" entry into yesterday and change what the window keeps.
+NOW = datetime(2026, 6, 15, 14, 30).astimezone()
+
+
+def add(store, text: str, days_ago: float, now: datetime = NOW):
+    when = now - timedelta(days=days_ago)
     return store.add_entry(
         raw_text=text,
         processed_text=text,
@@ -136,7 +142,7 @@ def add(store, text: str, days_ago: float):
 def test_never_is_the_default_so_nothing_disappears_unasked(settings, history):
     assert settings.history_auto_clear_interval is HistoryAutoClearInterval.NEVER
     add(history, "old", days_ago=400)
-    assert history.prune_expired_entries(settings.history_auto_clear_interval) == 0
+    assert history.prune_expired_entries(settings.history_auto_clear_interval, now=NOW) == 0
     assert len(history.entries) == 1
 
 
@@ -155,7 +161,7 @@ def test_each_window_keeps_the_recent_and_drops_the_old(
     add(history, "keep me", days_ago=kept_age)
     add(history, "drop me", days_ago=dropped_age)
 
-    assert history.prune_expired_entries(interval) == 1
+    assert history.prune_expired_entries(interval, now=NOW) == 1
     assert [entry.raw_text for entry in history.entries] == ["keep me"]
 
 
@@ -197,7 +203,7 @@ def test_pruning_deletes_the_audio_too(tmp_path, history):
         ),
     )
 
-    history.prune_expired_entries(HistoryAutoClearInterval.AFTER_WEEK)
+    history.prune_expired_entries(HistoryAutoClearInterval.AFTER_WEEK, now=NOW)
     assert audio_store.deleted == ["old.wav"]
 
 
@@ -207,7 +213,7 @@ def test_pruning_survives_a_restart(tmp_path, settings):
     store.wait_until_loaded()
     add(store, "keep me", days_ago=1)
     add(store, "drop me", days_ago=99)
-    store.prune_expired_entries(HistoryAutoClearInterval.AFTER_WEEK)
+    store.prune_expired_entries(HistoryAutoClearInterval.AFTER_WEEK, now=NOW)
     store.finish_pending_writes()
     writer.shutdown()
 
@@ -223,9 +229,27 @@ def test_the_selection_moves_off_an_entry_that_was_cleared(history):
     add(history, "keep me", days_ago=1)
     history.selected_entry_id = old.id
 
-    history.prune_expired_entries(HistoryAutoClearInterval.AFTER_WEEK)
+    history.prune_expired_entries(HistoryAutoClearInterval.AFTER_WEEK, now=NOW)
     assert history.selected_entry_id != old.id
     assert history.selected_entry_id == history.entries[0].id
+
+
+@pytest.mark.parametrize("hour", [0, 1, 9, 14, 23])
+def test_end_of_day_keeps_today_whatever_the_hour(tmp_path, hour):
+    """Run at 00:05 and "two hours ago" is yesterday; the rule still holds."""
+    writer = TranscriptionHistoryWriter(path=tmp_path / f"history-{hour}.sqlite3")
+    store = TranscriptionHistoryStore(writer=writer)
+    store.wait_until_loaded()
+    try:
+        now = datetime(2026, 6, 15, hour, 5).astimezone()
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        add(store, "earlier today", days_ago=0, now=today + timedelta(minutes=1))
+        add(store, "yesterday", days_ago=0, now=today - timedelta(minutes=1))
+
+        assert store.prune_expired_entries(HistoryAutoClearInterval.END_OF_DAY, now=now) == 1
+        assert [entry.raw_text for entry in store.entries] == ["earlier today"]
+    finally:
+        writer.shutdown()
 
 
 def test_the_window_is_counted_from_the_start_of_the_day():
