@@ -3,142 +3,276 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fluentry — voice-to-text dictation for Linux</title>
-<meta name="description" content="Hold a key, talk, and the words are typed into whatever app you are using. On-device speech models, optional AI cleanup, nothing leaves your machine.">
+<title>Fluentry — dictation for Linux</title>
+<meta name="description" content="Hold a key, talk, and the words are typed into whatever app you are using. Speech recognition runs on your own machine — offline, private, and fast.">
+<meta property="og:title" content="Fluentry — dictation for Linux">
+<meta property="og:description" content="Hold a key, talk, and the words are typed into whatever app you are using. Speech runs on your own machine.">
+<meta property="og:url" content="https://fluentry.github.io">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#e95420">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='15' fill='%23e95420'/><rect x='26' y='13' width='12' height='23' rx='6' fill='white'/><path d='M20 31a12 12 0 0 0 24 0' stroke='white' stroke-width='4.5' fill='none' stroke-linecap='round'/><path d='M32 43v8' stroke='white' stroke-width='4.5' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Ubuntu:wght@500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23e95420'/><rect x='26' y='12' width='12' height='24' rx='6' fill='white'/><path d='M20 32a12 12 0 0 0 24 0' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/><rect x='30' y='44' width='4' height='8' fill='white'/></svg>">
 </head>
 <body>
 
-<header class="bar">
-  <strong>Fluentry</strong>
-  <nav>
-    <a href="#install">Install</a>
-    <a href="#how">How it works</a>
-    <a href="#wayland">Wayland</a>
-    <a href="#privacy">Privacy</a>
-    <a href="https://github.com/Fluentry/Fluentry">GitHub</a>
-  </nav>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar" id="topbar">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="15" fill="#e95420"/>
+        <rect x="26" y="13" width="12" height="23" rx="6" fill="#fff"/>
+        <path d="M20 31a12 12 0 0 0 24 0" stroke="#fff" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <path d="M32 43v8" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+      </svg>
+      Fluentry
+    </a>
+    <nav class="topnav" aria-label="Main">
+      <a href="#features" class="hide-sm">Features</a>
+      <a href="#install" class="hide-sm">Install</a>
+      <a href="#compat" class="hide-sm">Compatibility</a>
+      <a href="#privacy" class="hide-sm">Privacy</a>
+      <a class="ghost" href="https://github.com/Fluentry/Fluentry">GitHub</a>
+    </nav>
+  </div>
 </header>
 
-<main>
+<main id="main">
 
-<div class="hero">
-  <h1>Talk anywhere. Fluentry types for you.</h1>
-  <p class="lead">Hold a key, say what you mean, and the words land in whatever app you were already using. Everything can run on your own machine — no account, no upload, no API key.</p>
-  <div class="cta">
-    <a class="button primary" href="#install">Install</a>
-    <a class="button" href="https://github.com/Fluentry/Fluentry">Source</a>
+<section class="hero">
+  <div class="wrap">
+    <a class="eyebrow" href="https://github.com/Fluentry/Fluentry/releases/tag/v1.6.0">
+      <span class="dot"></span> Version 1.6.0 is out
+    </a>
+
+    <h1>Talk anywhere.<br>Fluentry <span class="accent">types for you.</span></h1>
+
+    <p class="lead">
+      Hold a key, say what you mean, and the words land in whatever app you
+      were already using. Speech recognition runs on your own machine — so it
+      works offline, and nothing you say has to leave the computer.
+    </p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="#install">
+        Install
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+      </a>
+      <a class="btn" href="https://github.com/Fluentry/Fluentry">Read the source</a>
+    </div>
+
+    <p class="hero-meta">
+      <span>GPL-3.0</span><span>Python 3.11+</span><span>X11 &amp; Wayland</span><span>938 tests</span>
+    </p>
+
+    <div class="demo" role="img" aria-label="A dictation being cleaned up: the spoken words 'fix the um parser bug literal comma then ship it' become the typed text 'fix the parser bug, then ship it'.">
+      <div class="demo-bar">
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        <span class="label">listening — Parakeet TDT v3</span>
+      </div>
+      <div class="demo-body">
+        <div class="demo-pane">
+          <span class="tag">You say</span>
+          <p class="spoken">fix the <span class="filler">um</span> parser bug <span class="cmd">literal comma</span> then ship it</p>
+          <div class="wave" aria-hidden="true"></div>
+        </div>
+        <div class="demo-arrow" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
+        <div class="demo-pane">
+          <span class="tag">Fluentry types</span>
+          <p class="typed">fix the parser bug, then ship it<span class="caret"></span></p>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
 <section id="features">
-  <h2>What it does</h2>
-  <p class="sub">A dictation app built for Linux, not ported onto it.</p>
-  <div class="cards">
-    <div class="card">
-      <h3>On-device speech</h3>
-      <p>Whisper and Parakeet run locally. Parakeet TDT v3 transcribes a short phrase in about 300&nbsp;ms on a CPU.</p>
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">What it does</span>
+      <h2>A dictation app built for Linux, not ported onto it.</h2>
+      <p>Every macOS framework the original relied on was replaced with the interface Linux actually uses.</p>
     </div>
-    <div class="card">
-      <h3>Your own vocabulary</h3>
-      <p>A custom dictionary fixes the words a model keeps mishearing — names, jargon, spellings — and can delete filler words outright.</p>
-    </div>
-    <div class="card">
-      <h3>Spoken punctuation</h3>
-      <p>Say “literal comma” and get one. Formatting rules, filler-word removal and send-on-phrase all run before the text is inserted.</p>
-    </div>
-    <div class="card">
-      <h3>Optional AI cleanup</h3>
-      <p>Pass each transcript through a language model — local via Ollama or LM&nbsp;Studio, or a remote provider. Off by default, and can be forced on or off per app.</p>
-    </div>
-    <div class="card">
-      <h3>Desktop-native</h3>
-      <p>Follows your system colour scheme, accent colour, icon theme and UI font. Tray icon, recording overlay, GNOME-style settings.</p>
-    </div>
-    <div class="card">
-      <h3>A local API</h3>
-      <p>Loopback-only HTTP on port 47733, off by default, so other tools on the machine can read history or ask for a transcript.</p>
+
+    <div class="grid">
+      <article class="card reveal">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></div>
+        <h3>Speech, on your machine</h3>
+        <p>Whisper and Parakeet run locally. Parakeet TDT v3 transcribes a short phrase in about 300&nbsp;ms on a CPU, in dozens of languages.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <h3>Your own vocabulary</h3>
+        <p>A custom dictionary fixes the words a model keeps mishearing — names, jargon, spellings — and an empty replacement deletes a word outright.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
+        <h3>Spoken punctuation</h3>
+        <p>Say “literal comma” and get one. Filler words go, formatting rules run, and a closing phrase can press Return for you.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg></div>
+        <h3>Optional AI cleanup</h3>
+        <p>Pass each transcript through a language model, local via Ollama or LM&nbsp;Studio or a remote provider. Off by default, and switchable per app.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+        <h3>Desktop-native</h3>
+        <p>Follows your colour scheme, accent colour, icon theme and UI font. Tray icon, recording overlay and settings built to GNOME’s Adwaita conventions.</p>
+      </article>
+
+      <article class="card reveal">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div>
+        <h3>Scriptable</h3>
+        <p>Transcribe a file from the shell, or switch on a loopback HTTP API so other tools can read history, manage the dictionary and ask for transcripts.</p>
+      </article>
     </div>
   </div>
 </section>
 
 <section id="install">
-  <h2>Install</h2>
-  <p class="sub">Python 3.11 or newer.</p>
-<pre><code>git clone https://github.com/Fluentry/Fluentry.git
-cd Fluentry
-pip install -e '.[gui,audio,input,whisper,parakeet]'
-fluentry --check</code></pre>
-  <p><code>--check</code> prints a line per capability and exits non-zero if something essential is missing, so it works in a script too.</p>
-  <div class="table-wrap">
-    <table>
-      <tr><th>Extra</th><th>Brings in</th><th>Needed for</th></tr>
-      <tr><td><code>gui</code></td><td>PySide6</td><td>the tray, overlay and windows</td></tr>
-      <tr><td><code>audio</code></td><td>sounddevice</td><td>low-latency capture (else <code>pw-record</code>)</td></tr>
-      <tr><td><code>input</code></td><td>evdev, pynput</td><td>global hotkeys</td></tr>
-      <tr><td><code>whisper</code></td><td>faster-whisper</td><td>the Whisper engines</td></tr>
-      <tr><td><code>parakeet</code></td><td>onnx-asr, onnxruntime</td><td>the Parakeet engines</td></tr>
-    </table>
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Install</span>
+      <h2>Three commands and you are dictating.</h2>
+      <p>Python 3.11 or newer. On first launch a short setup picks a language, downloads an engine and lets you try it.</p>
+    </div>
+
+    <div class="code reveal">
+      <button class="copy" type="button" data-copy="pip install 'fluentry[gui,audio,input,whisper,parakeet]'&#10;fluentry --check&#10;fluentry">Copy</button>
+<pre><span class="p">$</span> pip install <span class="c">'fluentry[gui,audio,input,whisper,parakeet]'</span>
+<span class="p">$</span> fluentry --check   <span class="c"># what this machine supports</span>
+<span class="p">$</span> fluentry</pre>
+    </div>
+
+    <div class="extras reveal">
+      <div class="extra"><code>gui</code><span>tray, overlay, windows</span></div>
+      <div class="extra"><code>audio</code><span>low-latency capture</span></div>
+      <div class="extra"><code>input</code><span>global hotkeys</span></div>
+      <div class="extra"><code>whisper</code><span>the Whisper engines</span></div>
+      <div class="extra"><code>parakeet</code><span>the Parakeet engines</span></div>
+      <div class="extra"><code>onnx</code><span>Nemotron and Cohere</span></div>
+    </div>
   </div>
 </section>
 
-<section id="how">
-  <h2>How it works</h2>
-  <p class="sub">Each macOS framework replaced with the interface Linux actually uses.</p>
-  <div class="table-wrap">
-    <table>
-      <tr><th>On macOS</th><th>In Fluentry</th></tr>
-      <tr><td>CoreAudio device list</td><td>PipeWire, PulseAudio, ALSA</td></tr>
-      <tr><td>AVAudioEngine capture</td><td>PortAudio, else <code>pw-record</code> / <code>parec</code></td></tr>
-      <tr><td>CGEventTap hotkeys</td><td>evdev, else pynput on X11</td></tr>
-      <tr><td>Accessibility API typing</td><td><code>xdotool</code>, <code>ydotool</code> or <code>wtype</code></td></tr>
-      <tr><td>Keychain</td><td>freedesktop Secret Service</td></tr>
-      <tr><td>MediaRemote</td><td>MPRIS via <code>playerctl</code></td></tr>
-      <tr><td>Login item</td><td><code>~/.config/autostart</code></td></tr>
-      <tr><td>CoreML speech models</td><td>faster-whisper, onnx-asr, sherpa-onnx</td></tr>
-      <tr><td>UserDefaults</td><td><code>$XDG_CONFIG_HOME/fluentry/settings.json</code></td></tr>
-    </table>
+<section id="engines">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Engines</span>
+      <h2>Pick the model that fits your machine.</h2>
+      <p>Weights download on first use into your cache directory, and uninstalling takes them with it.</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>Engine</th><th>Runtime</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Whisper Tiny … Large</td><td><code>faster-whisper</code></td><td>99 languages, works out of the box</td></tr>
+          <tr><td>Parakeet TDT v3 / v2</td><td><code>onnx-asr</code></td><td>~640&nbsp;MB int8, multilingual, ~300&nbsp;ms for a short phrase</td></tr>
+          <tr><td>Nemotron, Cohere Transcribe</td><td><code>sherpa-onnx</code></td><td>their exports use that runtime’s layout</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
-  <p>Every persisted key, enum value and backup field name matches the macOS app, so a FluidVoice backup restores into Fluentry and back again.</p>
 </section>
 
-<section id="wayland">
-  <h2>Wayland, honestly</h2>
-  <p class="sub">Three things Wayland withholds, and what each one means.</p>
-  <div class="note">
-    <p><strong>Typing into other apps.</strong> <code>xdotool</code> reaches XWayland apps only. Install <code>ydotool</code> or <code>wtype</code> for native Wayland apps — or use <em>Copy to Clipboard Only</em>, which works everywhere.</p>
-    <p><strong>Global hotkeys.</strong> A compositor does not hand keystrokes to ordinary clients, so the shortcut needs <code>evdev</code>: add yourself to the <code>input</code> group with <code>sudo usermod -aG input "$USER"</code> and log back in. On X11 nothing is needed.</p>
-    <p><strong>The focused window.</strong> Most compositors do not expose it, so per-app prompts are unavailable there. Hyprland, Sway and KWin do, and are used when present.</p>
+<section id="compat">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Compatibility</span>
+      <h2>Wayland, honestly.</h2>
+      <p>Wayland withholds three things a dictation app would like. Fluentry reports each one instead of failing quietly — <code>fluentry --check</code> tells you which apply to your session.</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>Capability</th><th>X11</th><th>Wayland</th><th>What it needs there</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Typing into other apps</td>
+            <td><span class="status ok">Works</span></td>
+            <td><span class="status part">XWayland only</span></td>
+            <td>Install <code>ydotool</code> or <code>wtype</code>, or use <em>Copy to Clipboard Only</em></td>
+          </tr>
+          <tr>
+            <td>Global hotkeys</td>
+            <td><span class="status ok">Works</span></td>
+            <td><span class="status part">Needs a group</span></td>
+            <td><code>sudo usermod -aG input "$USER"</code>, then log back in</td>
+          </tr>
+          <tr>
+            <td>Per-app prompts</td>
+            <td><span class="status ok">Works</span></td>
+            <td><span class="status part">Some compositors</span></td>
+            <td>Hyprland, Sway and KWin expose the focused window; most do not</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
-  <p><code>fluentry --check</code> tells you which of these apply on your desktop, rather than letting you discover them by pressing a key and getting nothing.</p>
 </section>
 
 <section id="privacy">
-  <h2>Where your words go</h2>
-  <p class="sub">Nowhere, unless you configure it.</p>
-  <ul>
-    <li>Speech models run on your machine. Transcription needs no network.</li>
-    <li>History is a SQLite database under <code>$XDG_DATA_HOME/fluentry/</code>, and can clear itself after a day, a week, a month or a quarter.</li>
-    <li>API keys go to the freedesktop Secret Service, never to a file in plain text.</li>
-    <li>AI cleanup is off by default. When on, a provider is only ever contacted after you have verified it, and what is stored is a hash of the endpoint-and-key pair — change either and the verification lapses.</li>
-    <li>The local API binds to 127.0.0.1 only and is off until you switch it on.</li>
-  </ul>
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Privacy</span>
+      <h2>Where your words go: nowhere, unless you send them.</h2>
+    </div>
+    <ul class="checks reveal">
+      <li>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        <span><strong>Transcription needs no network.</strong> The models run locally; dictation works with the machine offline.</span>
+      </li>
+      <li>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        <span><strong>History stays local, and can expire.</strong> A SQLite database on your disk that clears itself after a day, 7, 30 or 90 days if you ask it to.</span>
+      </li>
+      <li>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        <span><strong>Keys live in your keyring.</strong> The freedesktop Secret Service, never a plain-text file.</span>
+      </li>
+      <li>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        <span><strong>AI cleanup fails closed.</strong> Off by default. A provider is only contacted after you verify it, and what is stored is a hash of the endpoint-and-key pair — change either and the verification lapses.</span>
+      </li>
+      <li>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        <span><strong>The local API is loopback-only</strong> and switched off until you turn it on.</span>
+      </li>
+    </ul>
+  </div>
 </section>
 
-<section id="project">
-  <h2>The project</h2>
-  <p>Fluentry is a Linux port of <a href="https://github.com/altic-dev/FluidVoice">FluidVoice</a>, the macOS dictation app, rebuilt in Python and PySide6. It is GPL-3.0-or-later, the same licence as the original.</p>
-  <p>915 automated tests cover the port, including end-to-end runs that drive a real dictation from a synthetic keypress through capture, transcription, the text pipeline and into a recording target — plus UI tests that click the actual widgets and sample rendered pixels.</p>
+<section class="closing">
+  <div class="wrap reveal">
+    <h2>Stop typing what you could just say.</h2>
+    <div class="actions">
+      <a class="btn btn-primary" href="#install">Install Fluentry</a>
+      <a class="btn" href="https://github.com/Fluentry/Fluentry/releases/tag/v1.6.0">Release notes</a>
+    </div>
+  </div>
 </section>
 
 </main>
 
 <footer>
-  <div class="inner">
-    Fluentry · GPL-3.0-or-later · derived from <a href="https://github.com/altic-dev/FluidVoice">FluidVoice</a>
+  <div class="wrap">
+    <span>Fluentry · GPL-3.0-or-later</span>
+    <span>Derived from <a href="https://github.com/altic-dev/FluidVoice">FluidVoice</a></span>
+    <span class="sep"><a href="https://github.com/Fluentry/Fluentry">Source</a></span>
+    <span><a href="https://github.com/Fluentry/Fluentry/issues">Issues</a></span>
   </div>
 </footer>
 
+<script src="app.js" defer></script>
 </body>
 </html>
