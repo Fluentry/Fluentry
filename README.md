@@ -103,9 +103,14 @@ Wayland deliberately withholds three things a dictation app would like.
 Fluentry reports each rather than failing quietly — `fluentry --check` tells
 you which apply to your session.
 
-**Typing into other apps.** `xdotool` reaches XWayland apps only. Install
-`ydotool` (with `ydotoold` running) or `wtype` for native Wayland apps, or
-use *Copy to Clipboard Only*, which always works.
+**Typing into other apps.** Install `python-libei` and your distribution's
+`libei` and `python3-gi` packages: libei is the input path a Wayland
+compositor is obliged to deliver, and it asks permission once rather than
+every launch. `xdotool` reaches XWayland apps only, and `ydotool` — despite
+writing to the kernel — has its events read and then discarded by GNOME's
+compositor, which looks exactly like success. `wtype` needs the
+virtual-keyboard protocol, which GNOME does not offer ordinary clients.
+Failing all of those, *Copy to Clipboard Only* always works.
 
 **Global hotkeys.** A compositor does not hand keystrokes to ordinary
 clients, so the shortcut needs to read the keyboard device directly:
@@ -155,7 +160,7 @@ across automatically on first run.
 | Audio devices | PipeWire (`pw-dump`), PulseAudio (`pactl`), ALSA |
 | Capture | PortAudio via `sounddevice`, else `pw-record` / `parec` |
 | Global hotkeys | evdev, else pynput on X11 |
-| Typing into apps | `xdotool`, `ydotool` or `wtype` |
+| Typing into apps | libei via the RemoteDesktop portal, else `xdotool`, `ydotool` or `wtype` |
 | Clipboard | Qt, `wl-copy`, `xclip` or `xsel` |
 | Credentials | freedesktop Secret Service (`secret-tool`) |
 | Media control | MPRIS via `playerctl` |

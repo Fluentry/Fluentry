@@ -30,9 +30,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable, Protocol, Sequence
 
+from ..logging_setup import get_logger
+from ..models import keycodes
 from ..models.keycodes import ModifierFlags
 from ..persistence.settings_types import TextInsertionMode
 from .clipboard import TEXT_MIME, Clipboard, InMemoryClipboard, PreservedClipboardSnapshot
+
+_log = get_logger("inject")
 
 #: Marker MIME types that ask a clipboard manager to skip an entry.
 #: `x-kde-passwordManagerHint` is deliberately NOT used: it means "secret",
@@ -72,9 +76,24 @@ def _run(command: list[str], input_text: str | None = None, timeout: float = 10.
             timeout=timeout,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):
+    except subprocess.TimeoutExpired:
+        # Typing a long transcript can outrun the timeout; the text is then
+        # half-inserted, which looks exactly like a silent failure.
+        _log.error("%s timed out after %.0fs", command[0], timeout)
         return False
-    return result.returncode == 0
+    except (OSError, subprocess.SubprocessError) as error:
+        _log.error("%s could not be run: %s", command[0], error)
+        return False
+    if result.returncode != 0:
+        _log.error(
+            "%s exited %d: %s",
+            command[0],
+            result.returncode,
+            (result.stderr or b"").decode("utf-8", "replace").strip()[:400],
+        )
+        return False
+    _log.debug("ran %s", " ".join(command[:3]))
+    return True
 
 
 class XdotoolBackend:
@@ -104,6 +123,49 @@ class XdotoolBackend:
         return _run(["xdotool", "key", "--clearmodifiers", chord])
 
 
+#: ydotool takes raw evdev keycodes, not key names, and anything it cannot
+#: parse it treats as a pause — while still exiting 0. A name that is missing
+#: here therefore has to fail before it reaches the command line, or the
+#: caller is told the keystroke landed when nothing was sent at all.
+YDOTOOL_KEYCODES: dict[str, int] = {
+    "ctrl": keycodes.KEY_LEFTCTRL,
+    "control": keycodes.KEY_LEFTCTRL,
+    "shift": keycodes.KEY_LEFTSHIFT,
+    "alt": keycodes.KEY_LEFTALT,
+    "super": keycodes.KEY_LEFTMETA,
+    "meta": keycodes.KEY_LEFTMETA,
+    "return": keycodes.KEY_ENTER,
+    "enter": keycodes.KEY_ENTER,
+    "tab": keycodes.KEY_TAB,
+    "escape": keycodes.KEY_ESC,
+    "esc": keycodes.KEY_ESC,
+    "space": keycodes.KEY_SPACE,
+    "backspace": keycodes.KEY_BACKSPACE,
+    **{name.lower(): code for code, name in keycodes.QWERTY_FALLBACK.items()},
+}
+
+
+def ydotool_keycode(name: str) -> int | None:
+    return YDOTOOL_KEYCODES.get(name.strip().lower())
+
+
+#: Every modifier, both sides. xdotool has `--clearmodifiers` for this;
+#: ydotool has no equivalent, so the release has to be sent by hand. Without
+#: it a still-held dictation hotkey turns each injected character into a
+#: shortcut and nothing reaches the document — and the default hotkey is
+#: Right Alt, which is AltGr on most layouts outside the US.
+CLEARED_MODIFIER_CODES = (
+    keycodes.KEY_LEFTCTRL,
+    keycodes.KEY_RIGHTCTRL,
+    keycodes.KEY_LEFTSHIFT,
+    keycodes.KEY_RIGHTSHIFT,
+    keycodes.KEY_LEFTALT,
+    keycodes.KEY_RIGHTALT,
+    keycodes.KEY_LEFTMETA,
+    keycodes.KEY_RIGHTMETA,
+)
+
+
 class YdotoolBackend:
     name = "ydotool"
 
@@ -114,18 +176,62 @@ class YdotoolBackend:
         ModifierFlags.SUPER: "super",
     }
 
+    #: ydotool's own default. Pushing it lower drops characters: the events
+    #: reach the kernel either way, but a compositor coalescing them that
+    #: fast loses some on the way to the focused window.
+    KEY_DELAY_MILLISECONDS = 20
+
+    #: Gap between the events of a chord, so the modifier is applied before
+    #: the key it modifies arrives.
+    CHORD_DELAY_MILLISECONDS = 25
+
     @staticmethod
     def is_available() -> bool:
         return shutil.which("ydotool") is not None
 
+    def clear_modifiers(self) -> bool:
+        """xdotool's `--clearmodifiers`, which ydotool does not provide."""
+        return _run(["ydotool", "key", *(f"{code}:0" for code in CLEARED_MODIFIER_CODES)])
+
     def type_text(self, text: str) -> bool:
         if not text:
             return True
-        return _run(["ydotool", "type", "--key-delay", "1", "--", text])
+        self.clear_modifiers()
+        return _run(
+            [
+                "ydotool",
+                "type",
+                "--key-delay",
+                str(self.KEY_DELAY_MILLISECONDS),
+                "--",
+                text,
+            ]
+        )
 
     def send_chord(self, key: str, modifiers: Sequence[str] = ()) -> bool:
-        chord = "+".join([*modifiers, key])
-        return _run(["ydotool", "key", chord])
+        codes = [ydotool_keycode(name) for name in (*modifiers, key)]
+        if any(code is None for code in codes):
+            return False
+        self.clear_modifiers()
+        # Press the modifiers in order, then release everything in reverse, so
+        # the chord is never left with a modifier stuck down.
+        #
+        # The delay matters as much as the order: with none, Ctrl-down and
+        # V-down land in the same millisecond, and a compositor that has not
+        # applied the modifier yet sees a bare "v". No real keyboard produces
+        # a chord that fast.
+        presses = [f"{code}:1" for code in codes]
+        releases = [f"{code}:0" for code in reversed(codes)]
+        return _run(
+            [
+                "ydotool",
+                "key",
+                "--key-delay",
+                str(self.CHORD_DELAY_MILLISECONDS),
+                *presses,
+                *releases,
+            ]
+        )
 
 
 class WtypeBackend:
@@ -183,9 +289,11 @@ class RecordingBackend:
 
 
 def available_backends() -> list[str]:
+    from .libei_injection import LibeiBackend
+
     return [
         backend.name
-        for backend in (XdotoolBackend(), YdotoolBackend(), WtypeBackend())
+        for backend in (XdotoolBackend(), YdotoolBackend(), WtypeBackend(), LibeiBackend())
         if type(backend).is_available()
     ]
 
@@ -198,9 +306,14 @@ def make_injection_backend(session_type: str | None = None):
     """
     from .system_capabilities import SESSION_WAYLAND, session_type as detect_session
 
+    from .libei_injection import LibeiBackend
+
     session = session_type or detect_session()
     if session == SESSION_WAYLAND:
-        order = (YdotoolBackend, WtypeBackend, XdotoolBackend)
+        # libei first: it is the only one the compositor is obliged to
+        # deliver. ydotool's events reach the kernel and are then dropped on
+        # the way to the focused window, which looks identical to success.
+        order = (LibeiBackend, YdotoolBackend, WtypeBackend, XdotoolBackend)
     else:
         order = (XdotoolBackend, YdotoolBackend, WtypeBackend)
     for backend_type in order:
@@ -266,7 +379,18 @@ class TypingService:
     clipboard: Clipboard = field(default_factory=InMemoryClipboard)
     paste_key_name: str = "v"
     #: How long to let the target app read the clipboard before restoring it.
-    paste_settle_seconds: float = 0.12
+    paste_settle_seconds: float = 0.15
+    #: Whether to put the user's previous clipboard back afterwards. On by
+    #: default, which is the documented behaviour: the app borrows the
+    #: clipboard and gives it back. Turning it off keeps the transcript
+    #: there instead, which is what you want while the paste itself is
+    #: unreliable - a user whose paste silently failed is otherwise left
+    #: with nothing at all.
+    restore_clipboard_after_paste: bool = True
+    #: How long to let a clipboard write reach the compositor before the
+    #: paste chord asks for it. `wl-copy` has already taken the selection by
+    #: the time it returns, so this only needs to cover the handover.
+    clipboard_settle_seconds: float = 0.05
     insertion_mode: TextInsertionMode = TextInsertionMode.STANDARD
 
     def __post_init__(self) -> None:
@@ -276,13 +400,20 @@ class TypingService:
         if not text:
             return True
         mode = mode or self.insertion_mode
+        _log.info(
+            "inserting %d chars via %s, mode=%s", len(text), self.backend.name, mode.value
+        )
         if mode is TextInsertionMode.RELIABLE_PASTE:
             return self.insert_via_clipboard(text)
         if self.backend.type_text(text):
+            _log.info("typed directly")
             return True
         # Direct typing can fail on a native Wayland client with an X11-only
         # backend; the clipboard path still reaches it.
-        return self.insert_via_clipboard(text)
+        _log.warning("direct typing failed, falling back to the clipboard")
+        inserted = self.insert_via_clipboard(text)
+        _log.info("clipboard fallback %s", "succeeded" if inserted else "FAILED")
+        return inserted
 
     def insert_via_clipboard(self, text: str) -> bool:
         if not text:
@@ -292,7 +423,13 @@ class TypingService:
             if not self.clipboard.write_all([make_transient_clipboard_item(text)]):
                 return False
             owned_change_count = self.clipboard.change_count
+            if self.clipboard_settle_seconds > 0:
+                time.sleep(self.clipboard_settle_seconds)
             pasted = self.send_paste_chord()
+            _log.info("paste chord %s", "sent" if pasted else "FAILED")
+            if not self.restore_clipboard_after_paste:
+                _log.info("left the transcript on the clipboard")
+                return pasted
             if self.paste_settle_seconds > 0:
                 time.sleep(self.paste_settle_seconds)
             snapshot.restore(self.clipboard, if_unchanged_since=owned_change_count)

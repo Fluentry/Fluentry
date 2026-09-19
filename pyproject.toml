@@ -22,6 +22,11 @@ parakeet = ["onnx-asr>=0.12", "onnxruntime>=1.17", "huggingface_hub>=0.24"]
 onnx = ["sherpa-onnx>=1.10"]
 audio = ["sounddevice>=0.4"]
 input = ["evdev>=1.6", "pynput>=1.7"]
+# The input path GNOME sanctions. `python-libei` is pure ctypes, but the
+# libei/libeis/liboeffis shared libraries and PyGObject come from the
+# distribution (libei1, liboeffis0, python3-gi). Without PyGObject the
+# permission cannot be remembered and is asked for on every launch.
+libei = ["python-libei>=0.5"]
 
 [project.scripts]
 fluentry = "fluentry.__main__:main"
