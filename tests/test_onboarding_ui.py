@@ -176,3 +176,47 @@ def test_a_download_in_the_wizard_shows_that_it_is_working(wizard):
     wizard._download_in_progress = True
     wizard._refresh_model_status()
     assert wizard.download_progress.isVisibleTo(wizard), "silence reads as a freeze"
+
+
+def test_a_failed_dictation_says_so_instead_of_reverting(wizard):
+    """It used to put the placeholder back and look like nothing happened.
+
+    "failed" and "silent" were not in the list of states the step listened
+    for, so a dictation that went wrong was indistinguishable from one that
+    was never started.
+    """
+    from fluentry.ui.onboarding import Step
+
+    wizard._flow.step = Step.PLAYGROUND
+    wizard._show_step()
+
+    wizard._app.last_error = "The model could not be loaded."
+    wizard._on_dictation_state("failed")
+    assert "could not be loaded" in wizard.playground_result.text()
+    assert wizard.playground_result.text() != "Your words will appear here."
+
+
+def test_a_silent_recording_says_so(wizard):
+    from fluentry.ui.onboarding import Step
+
+    wizard._flow.step = Step.PLAYGROUND
+    wizard._show_step()
+
+    wizard._on_dictation_state("silent")
+    assert "silent" in wizard.playground_result.text().lower()
+
+
+def test_transcribing_does_not_collapse_back_to_the_placeholder(wizard):
+    """The reported symptom: "Transcribing…" then the placeholder again."""
+    from fluentry.ui.onboarding import Step
+
+    wizard._flow.step = Step.PLAYGROUND
+    wizard._show_step()
+
+    wizard._on_dictation_state("transcribing")
+    assert wizard.playground_result.text() == "Transcribing…"
+
+    wizard._on_dictation_state("failed")
+    assert wizard.playground_result.text() != "Your words will appear here.", (
+        "a failure must not be reported as an empty page"
+    )

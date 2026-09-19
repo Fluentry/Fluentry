@@ -254,7 +254,10 @@ class OnboardingWindow(QWidget):
         self._refresh_playground()
 
     def _on_dictation_state(self, state: str) -> None:
-        if state in ("recording", "transcribing", "idle"):
+        # "failed" and "silent" used to fall through here unhandled, so a
+        # dictation that went wrong simply put the placeholder back and the
+        # step looked as though nothing had happened at all.
+        if state in ("recording", "transcribing", "idle", "failed", "silent"):
             self._dictation_phase = state
             if self._flow.step is Step.PLAYGROUND:
                 self._refresh_playground()
@@ -525,6 +528,16 @@ class OnboardingWindow(QWidget):
         if recording:
             # A result from a previous run is stale the moment a new one starts.
             self.playground_result.setText("Listening…")
+        elif self._dictation_phase == "silent":
+            self.playground_result.setText(
+                "That recording was silent. Check the microphone and try again."
+            )
+        elif self._dictation_phase == "failed":
+            # Saying what went wrong beats reverting to the placeholder and
+            # leaving the user to conclude the app simply ignored them.
+            self.playground_result.setText(
+                self._app.last_error or "That dictation failed. Try again."
+            )
         elif self._dictation_phase == "transcribing" and not text:
             # Without this the label goes blank between speaking and the result.
             self.playground_result.setText("Transcribing…")

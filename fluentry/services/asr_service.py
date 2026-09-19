@@ -26,6 +26,7 @@ from ..persistence.settings_types import TextInsertionMode
 from .audio_runtime import ThreadSafeAudioBuffer
 from .providers.base import TranscriptionProviderError, TranscriptionResult
 from .text_pipeline import PipelineContext, PipelineResult, TextPipeline
+from ..logging_setup import get_logger
 
 TARGET_SAMPLE_RATE = 16_000
 
@@ -38,6 +39,9 @@ MAXIMUM_SILENCE_GATE_SECONDS = 4
 SILENCE_PEAK_THRESHOLD = 0.01
 SILENCE_RMS_THRESHOLD = 0.002
 SILENCE_FRAME_RMS_THRESHOLD = 0.0045
+
+
+_log = get_logger("asr")
 
 
 @dataclass(frozen=True)
@@ -260,11 +264,13 @@ class ASRService:
             assessment = assess_short_audio_silence(samples)
             if assessment.is_eligible and assessment.should_skip_transcription:
                 outcome.was_skipped_as_silent = True
-                self._notify("idle")
+                _log.info("skipped: the recording was silent")
+                self._notify("silent")
                 return outcome
 
         if self.provider is None:
             outcome.error = "No speech model is selected."
+            _log.error("no provider: %s", outcome.error)
             self._notify("failed")
             return outcome
 
@@ -275,10 +281,12 @@ class ASRService:
             result: TranscriptionResult = self.provider.transcribe(samples, language=language)
         except TranscriptionProviderError as error:
             outcome.error = str(error)
+            _log.error("transcription refused: %s", error)
             self._notify("failed")
             return outcome
         except Exception as error:
             outcome.error = str(error)
+            _log.exception("transcription raised: %s", error)
             self._notify("failed")
             return outcome
 

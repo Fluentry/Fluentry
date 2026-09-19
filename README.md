@@ -17,10 +17,10 @@ Service for credentials, MPRIS for media, and Adwaita for the look.
 ## Quick start
 
 On Debian and Ubuntu, install the package from the
-[latest release](https://github.com/Fluentry/Fluentry/releases/latest):
+[latest release](https://github.com/Fluentry/Fluentry/releases):
 
 ```bash
-sudo apt install ./fluentry_1.9.0_all.deb
+sudo apt install ./fluentry_1.0.0_all.deb
 fluentry
 ```
 
