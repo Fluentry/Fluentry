@@ -28,7 +28,10 @@ find "$SITE/fluentry" -name '__pycache__' -type d -prune -exec rm -rf {} +
 # runs the default speech model, and python-libei is the input path.
 python3 -m pip install --quiet --no-compile --target "$SITE" \
     --no-deps "onnx-asr>=0.12" "python-libei>=0.5"
-find "$SITE" -name '*.dist-info' -type d -prune -exec rm -rf {} +
+# The .dist-info directories stay: onnx_asr reads its own version through
+# importlib.metadata at import time, and without that metadata the import
+# raises PackageNotFoundError and the engine looks unavailable while its
+# weights sit on disk.
 # pip drops console scripts into a bin/ inside the target directory; they
 # are not ours to install and would collide on the python path.
 rm -rf "$SITE/bin"
@@ -55,6 +58,18 @@ install -Dm644 "$ROOT/LICENSE" "$STAGE/usr/share/doc/fluentry/copyright"
 sed "s/@VERSION@/$VERSION/" "$ROOT/packaging/deb/control" > "$STAGE/DEBIAN/control"
 install -Dm755 "$ROOT/packaging/deb/postinst" "$STAGE/DEBIAN/postinst"
 install -Dm755 "$ROOT/packaging/deb/postrm" "$STAGE/DEBIAN/postrm"
+
+# Prove the staged tree actually works before wrapping it up. Stripping
+# the package metadata once made onnx_asr unimportable, and the only
+# symptom was an engine reporting itself unavailable while its weights sat
+# on disk - nothing a unit test in the source tree would ever have caught.
+for module in fluentry onnx_asr libei; do
+    if ! PYTHONPATH="$SITE" python3 -c "import $module" 2>/dev/null; then
+        echo "staged package is broken: $module does not import" >&2
+        PYTHONPATH="$SITE" python3 -c "import $module" >&2 || true
+        exit 1
+    fi
+done
 
 mkdir -p "$ROOT/dist"
 OUT="$ROOT/dist/fluentry_${VERSION}_all.deb"

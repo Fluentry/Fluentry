@@ -20,7 +20,7 @@ On Debian and Ubuntu, install the package from the
 [latest release](https://github.com/Fluentry/Fluentry/releases/latest):
 
 ```bash
-sudo apt install ./fluentry_1.8.0_all.deb
+sudo apt install ./fluentry_1.8.1_all.deb
 fluentry
 ```
 
