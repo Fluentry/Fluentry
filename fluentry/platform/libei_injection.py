@@ -53,6 +53,9 @@ KEYCODES: dict[str, int] = {
 CHORD_GAP_SECONDS = 0.02
 PORTAL_TIMEOUT_SECONDS = 30.0
 DEVICE_TIMEOUT_SECONDS = 10.0
+#: How long to wait for a paused device to come back before giving up on
+#: the session and negotiating a new one.
+RESUME_TIMEOUT_SECONDS = 5.0
 
 
 def keycode_for(name: str) -> int | None:
@@ -188,10 +191,46 @@ class LibeiBackend:
 
     # --- session ----------------------------------------------------------
 
+    def _await_resume(self, timeout: float = RESUME_TIMEOUT_SECONDS):
+        """Wait for a paused device to come back.
+
+        The compositor pauses a device when it is not in use and resumes it
+        on demand. That is not a lost session and must not be treated as
+        one: negotiating again would open a second portal session, and ask
+        the user for permission afresh if the stored grant ever failed.
+        """
+        from libei import ei
+
+        if self._sender is None:
+            return None
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            select.select([self._sender.fd], [], [], 0.5)
+            try:
+                self._sender.dispatch()
+            except Exception as error:
+                _log.warning("dispatch failed while waiting to resume: %s", error)
+                return None
+            for event in self._sender.events:
+                if event.event_type is ei.EventType.DEVICE_RESUMED:
+                    self._device = event.device
+                    return self._device
+                if event.event_type is ei.EventType.DISCONNECT:
+                    _log.warning("libei session disconnected while paused")
+                    self._session = self._sender = self._device = None
+                    return None
+        _log.info("device did not resume within %.0fs", timeout)
+        return None
+
     def _ensure_device(self):
         """Open the session on first use, then reuse it."""
         if self._device is not None:
             return self._device
+        if self._sender is not None:
+            # Paused, not lost. Wait rather than re-negotiating.
+            device = self._await_resume()
+            if device is not None:
+                return device
         from libei import ei
 
         session, eis_fd = self._negotiate_session()
@@ -222,10 +261,10 @@ class LibeiBackend:
 
     def _drain(self) -> None:
         """Keep up with pause/resume so a stale device is never used."""
-        from libei import ei
-
         if self._sender is None:
             return
+        from libei import ei
+
         try:
             self._sender.dispatch()
             for event in self._sender.events:
