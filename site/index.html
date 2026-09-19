@@ -31,6 +31,7 @@
     </a>
     <nav class="topnav" aria-label="Main">
       <a href="#features" class="hide-sm">Features</a>
+      <a href="#screens" class="hide-sm">Screens</a>
       <a href="#install" class="hide-sm">Install</a>
       <a href="#compat" class="hide-sm">Compatibility</a>
       <a href="#privacy" class="hide-sm">Privacy</a>
@@ -115,7 +116,7 @@
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
         <h3>Say the punctuation</h3>
-        <p>“literal comma” becomes a comma. The “um”s and “uh”s disappear on their own, and a closing phrase can press Return, so a whole message goes out without your hands leaving the desk.</p>
+        <p>“literal comma” becomes a comma. Switch on filler-word removal and the “um”s and “uh”s go with it, and a closing phrase can press Return, so a whole message goes out without your hands leaving the desk.</p>
       </article>
 
       <article class="card reveal">
@@ -135,6 +136,132 @@
         <h3>Works from the shell too</h3>
         <p>Transcribe a recording with one command, or switch on a loopback HTTP API and let your own tools read the history, manage the dictionary and ask for transcripts.</p>
       </article>
+    </div>
+  </div>
+</section>
+
+<section id="screens">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="kicker">Screenshots</span>
+      <h2>Six screens and a pill that floats.</h2>
+      <p>Adwaita’s own greys, so it sits next to GNOME Settings without announcing itself. These are rendered straight from the running app in both the light and the dark it ships with — you are seeing whichever one your system is set to.</p>
+    </div>
+
+    <div class="shots reveal" id="shots">
+      <!-- Without scripting every shot simply stacks; the tabs only appear
+           once there is something to drive them. -->
+      <div class="shot-tabs" role="tablist" aria-label="Screens">
+        <button type="button" class="shot-tab" role="tab" id="tab-welcome" aria-controls="panel-welcome" aria-selected="true">Welcome</button>
+        <button type="button" class="shot-tab" role="tab" id="tab-engine" aria-controls="panel-engine" aria-selected="false" tabindex="-1">Voice Engine</button>
+        <button type="button" class="shot-tab" role="tab" id="tab-history" aria-controls="panel-history" aria-selected="false" tabindex="-1">History</button>
+        <button type="button" class="shot-tab" role="tab" id="tab-dictionary" aria-controls="panel-dictionary" aria-selected="false" tabindex="-1">Dictionary</button>
+        <button type="button" class="shot-tab" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1">Stats</button>
+        <button type="button" class="shot-tab" role="tab" id="tab-ai" aria-controls="panel-ai" aria-selected="false" tabindex="-1">AI Enhancement</button>
+        <button type="button" class="shot-tab" role="tab" id="tab-settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">Settings</button>
+      </div>
+
+      <figure class="shot" id="panel-welcome" role="tabpanel" aria-labelledby="tab-welcome">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/welcome-light.png">
+            <img src="shots/welcome-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The Welcome screen: the dictation shortcut set to Right Alt, a Setup list confirming the speech model, microphone, text insertion and global hotkey, and today's counts of words dictated, dictations and time saved.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>What it opens to: your shortcut, whether this machine can actually dictate, and what today came to.</figcaption>
+      </figure>
+
+      <figure class="shot" id="panel-engine" role="tabpanel" aria-labelledby="tab-engine">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry — Voice Engine</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/voice-engine-light.png">
+            <img src="shots/voice-engine-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The Voice Engine screen: Parakeet TDT v3 Multilingual selected and already downloaded, spoken language set to Automatic, and a list of microphones in the order they will be tried.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>Every engine with its size and whether it is on disk yet. Microphones are tried in the order you put them in, so unplugging one just moves to the next.</figcaption>
+      </figure>
+
+      <figure class="shot" id="panel-history" role="tabpanel" aria-labelledby="tab-history">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry — History</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/history-light.png">
+            <img src="shots/history-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The History screen: a searchable list of past dictations by date, with the selected one shown in full beside the app and window it was typed into, and how long transcription took.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>Every dictation, searchable, next to the app it went into and how long the model took. A SQLite file on your own disk, which you can set to clear itself.</figcaption>
+      </figure>
+
+      <figure class="shot" id="panel-dictionary" role="tabpanel" aria-labelledby="tab-dictionary">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry — Custom Dictionary</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/dictionary-light.png">
+            <img src="shots/dictionary-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The Custom Dictionary screen: a two-column table pairing mishearings such as “pipe wire” and “way land” with the corrections PipeWire and Wayland, and a last row whose replacement is left empty.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>What the model keeps mishearing, and what to put there instead. Leave the replacement empty, as the last row does, and the word is simply dropped.</figcaption>
+      </figure>
+
+      <figure class="shot" id="panel-stats" role="tabpanel" aria-labelledby="tab-stats">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry — Stats</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/stats-light.png">
+            <img src="shots/stats-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The Stats screen: totals for words, dictations, time saved and day streak, a bar chart of the last thirty days, and details including average words per dictation, busiest hour and the apps dictated into most.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>Counted from the history already on your disk. Nothing is uploaded to produce any of it.</figcaption>
+      </figure>
+
+      <figure class="shot" id="panel-ai" role="tabpanel" aria-labelledby="tab-ai">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry — AI Enhancement</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/ai-enhancement-light.png">
+            <img src="shots/ai-enhancement-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The AI Enhancement screen, switched on and pointed at Ollama running on localhost with the model llama3.1:8b, an empty API key field, and the prompt sent with every dictation.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>Off until you turn it on. Point it at Ollama on localhost, as here, or at anything else that speaks the same API.</figcaption>
+      </figure>
+
+      <figure class="shot" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+        <div class="shot-frame">
+          <div class="shot-bar"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="label">Fluentry — Settings</span></div>
+          <div class="shot-scroll">
+          <picture>
+            <source media="(prefers-color-scheme: light)" srcset="shots/settings-light.png">
+            <img src="shots/settings-dark.png" width="1120" height="720" loading="lazy" decoding="async" alt="The Dictation section of Settings: the shortcut recorder showing Right Alt, an activation mode, the text insertion mode, and switches for spoken punctuation, slash commands, filler-word removal and other formatting rules.">
+          </picture>
+          </div>
+        </div>
+        <figcaption>Record a new shortcut by pressing it. Everything the text passes through on its way to the keyboard is a switch in here.</figcaption>
+      </figure>
+    </div>
+
+    <div class="pill-show reveal">
+      <div class="pill-copy">
+        <h3>While you talk, this is all that appears.</h3>
+        <p>A pill at the edge of the screen with a level meter, and the words so far if you have asked for them. It never takes focus, so the cursor stays exactly where you left it and a screen reader stays on the document you are actually writing.</p>
+      </div>
+      <picture class="pill-art">
+        <source media="(prefers-color-scheme: light)" srcset="shots/overlay-light.png">
+        <img src="shots/overlay-dark.png" width="420" height="72" loading="lazy" decoding="async" alt="The recording overlay: a rounded pill labelled “Listening”, an orange level meter, and the transcribed words so far.">
+      </picture>
     </div>
   </div>
 </section>
