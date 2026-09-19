@@ -2,7 +2,7 @@
 
 **Hold a key, talk, and the words are typed into whatever app you are using.**
 
-[Website](https://deniswsrosa.github.io/Fluentry/) · [Report an issue](https://github.com/deniswsrosa/Fluentry/issues)
+[Website](https://fluentry.github.io) · [Report an issue](https://github.com/Fluentry/Fluentry/issues)
 
 Fluentry is a dictation app for Linux. Speech recognition runs on your own
 machine, so it works offline and nothing you say is sent anywhere unless you
@@ -18,7 +18,7 @@ so a backup moves between the two in either direction.
 ## Quick start
 
 ```bash
-git clone https://github.com/deniswsrosa/Fluentry.git
+git clone https://github.com/Fluentry/Fluentry.git
 cd Fluentry
 pip install -e '.[gui,audio,input,whisper,parakeet]'
 fluentry --check      # what this machine supports
@@ -179,7 +179,8 @@ marked `model`, `hardware` and `display`, and are deselected by default.
 The HiDPI tests run in their own process, because the display scale has to
 be set before Qt starts.
 
-The website lives in [`site/`](site/) and is published from `docs/`.
+The website lives in [`site/`](site/); publishing copies it to the
+[fluentry.github.io](https://github.com/Fluentry/fluentry.github.io) repository.
 
 ## Licence
 
