@@ -1,6 +1,6 @@
 """Microphone capture.
 
-Replaces `DirectCoreAudioInput`. The same guarantees are kept:
+Reading the microphone. The guarantees callers rely on:
 
 * capture is only "started" once real PCM has arrived, never merely because
   the stream opened,

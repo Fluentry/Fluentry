@@ -1,6 +1,6 @@
 """Global hotkey listening.
 
-Replaces the macOS `CGEventTap`, which needed Input Monitoring permission.
+Watching for the dictation shortcut, whatever window has focus.
 Linux offers two practical paths and they have different reach:
 
 ============  ==========================  ==============================

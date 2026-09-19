@@ -1,8 +1,8 @@
 """Port of `testDictationEndToEnd_whisperTiny_transcribesFixture`.
 
-Runs the real Whisper Tiny model over the same audio fixture the macOS test
-suite uses, through the same pipeline the app uses, and checks the text that
-would actually be typed.
+Runs the real Whisper Tiny model over the shared audio fixture, through
+the same pipeline the app uses, and checks the text that would actually
+be typed.
 
 Marked `model` and deselected by default because it needs the weights on
 disk. Run it with:

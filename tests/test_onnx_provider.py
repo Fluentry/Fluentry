@@ -100,9 +100,11 @@ def test_whisper_depends_on_a_whisper_runtime(monkeypatch):
     assert engine_is_installable(SpeechModel.WHISPER_SMALL) is True
 
 
-def test_a_model_no_linux_runtime_serves_is_never_installable():
-    assert SpeechModel.APPLE_SPEECH.backend is SpeechBackend.UNSUPPORTED
-    assert engine_is_installable(SpeechModel.APPLE_SPEECH) is False
+def test_every_shipped_model_has_a_runtime_that_can_serve_it():
+    """Nothing is offered that no runtime could ever run."""
+    for model in SpeechModel:
+        assert model.backend is not SpeechBackend.UNSUPPORTED, model.value
+        assert model.is_supported, model.value
 
 
 # --- the download -----------------------------------------------------------

@@ -25,10 +25,11 @@ from ..persistence.speech_model import SpeechModel
 from ..services.providers.onnx_asr import engine_is_installable, missing_runtime_message
 from ..platform.text_injection import available_backends
 from ..services.onboarding_flow import LAST_STEP, OnboardingFlow, Readiness, Step
-from .tray import draw_microphone_icon
+from .tray import window_icon
 from .widgets import (
     Card,
     HeaderBar,
+    brand_lockup,
     button,
     hint_label,
     primary_button,
@@ -64,7 +65,7 @@ class OnboardingWindow(QWidget):
 
         self.setObjectName("Window")
         self.setWindowTitle("Welcome to Fluentry")
-        self.setWindowIcon(draw_microphone_icon(palette.accent))
+        self.setWindowIcon(window_icon(palette.accent))
         self.resize(760, 560)
 
         outer = QVBoxLayout(self)
@@ -72,6 +73,11 @@ class OnboardingWindow(QWidget):
         outer.setSpacing(0)
 
         self.header = HeaderBar("Welcome to Fluentry")
+        self._brand = brand_lockup(palette, height=22)
+        if self._brand is not None:
+            # The wordmark says the name better than a label does.
+            self.header.title.setVisible(False)
+            self.header.add_action(self._brand, leading=True)
         outer.addWidget(self.header)
 
         body = QWidget()

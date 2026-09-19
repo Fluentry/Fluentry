@@ -1,6 +1,6 @@
 """Enumerate audio devices from the running sound server.
 
-Replaces the CoreAudio HAL queries in `AudioDeviceService`. Three backends are
+Finding the machine's input devices. Three backends are
 tried in order, so the app works on a plain PipeWire desktop, a PulseAudio
 one, or bare ALSA:
 

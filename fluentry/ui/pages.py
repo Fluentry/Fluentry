@@ -5,7 +5,7 @@ Linux counterparts of `WelcomeView`, `VoiceEngineSettingsView`,
 `TranscriptionHistoryView`.
 
 Each page takes the services it needs and refreshes itself when shown, so
-nothing recomputes while it is hidden — the same rule the macOS
+nothing recomputes while it is hidden — the same rule the
 `StatsSnapshotStore` enforced.
 """
 

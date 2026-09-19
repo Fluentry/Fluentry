@@ -23,7 +23,7 @@ from fluentry.services.llm_client import (
 
 
 class FixtureTransport(Transport):
-    """Serves a canned SSE or JSON body, the way the Swift tests use URLProtocol."""
+    """Serves a canned SSE or JSON body in place of a real provider."""
 
     def __init__(self, body: str, status_code: int = 200) -> None:
         self.body = body

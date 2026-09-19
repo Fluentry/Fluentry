@@ -1,7 +1,7 @@
 """Pause whatever is playing while the user dictates, then put it back.
 
-A port of `MediaPlaybackService` and `MediaPlaybackTransport`. macOS drove
-this through a MediaRemote helper process; Linux uses MPRIS over D-Bus
+Pausing whatever is playing while a dictation runs. This uses MPRIS
+over D-Bus
 (`playerctl`, or `gdbus` against `org.mpris.MediaPlayer2.*`). The snapshot
 shape is unchanged — an application identifier, a process id, a title and a
 playing flag — so the reconciler is identical.

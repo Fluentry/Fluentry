@@ -137,7 +137,7 @@ def test_priority_backup_round_trips_removed_connected_microphones(settings):
 def test_legacy_system_mode_remains_readable_for_priority_migration(settings):
     assert settings.has_stored_mic_selection_mode_for_migration is False
     assert settings.stored_mic_selection_mode_for_migration is MicrophoneSelectionMode.SYSTEM
-    # An unset key still reports `manual` to the runtime, matching macOS.
+    # An unset key still reports `manual` to the runtime.
     assert settings.microphone_selection_mode is MicrophoneSelectionMode.MANUAL
 
     settings.microphone_selection_mode = MicrophoneSelectionMode.SYSTEM
@@ -420,8 +420,12 @@ def test_suggested_filename_uses_minute_resolution(settings):
 # --- speech model ----------------------------------------------------------
 
 
-def test_macos_only_speech_models_migrate_to_the_platform_default(settings):
-    settings.defaults.set(Keys.selected_speech_model, SpeechModel.APPLE_SPEECH.value)
+def test_a_retired_speech_model_falls_back_to_the_default(settings):
+    """A selection this build no longer knows must not break startup."""
+    settings.defaults.set(Keys.selected_speech_model, "apple-speech")
+    assert settings.selected_speech_model is SpeechModel.default_model()
+
+    settings.defaults.set(Keys.selected_speech_model, "some-model-from-the-future")
     assert settings.selected_speech_model is SpeechModel.default_model()
 
     settings.defaults.set(Keys.selected_speech_model, SpeechModel.WHISPER_SMALL.value)
@@ -430,8 +434,6 @@ def test_macos_only_speech_models_migrate_to_the_platform_default(settings):
 
 def test_available_models_exclude_unsupported_and_gated_entries():
     available = SpeechModel.available_models()
-    assert SpeechModel.APPLE_SPEECH not in available
-    assert SpeechModel.APPLE_SPEECH_ANALYZER not in available
     assert SpeechModel.QWEN3_ASR not in available
     assert SpeechModel.NEMOTRON_STREAMING_320 not in available
     assert SpeechModel.WHISPER_TINY in available

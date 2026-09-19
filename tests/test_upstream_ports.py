@@ -1,7 +1,7 @@
-"""Behaviour taken from the upstream FluidVoice tracker.
+"""Rules that came from reports against a sibling implementation.
 
-Each group names the issue or pull request it came from, so the origin of
-the rule is traceable when the two projects drift.
+Each group cites the report it answers, so the reason a rule exists stays
+traceable long after the discussion has gone.
 """
 
 from __future__ import annotations

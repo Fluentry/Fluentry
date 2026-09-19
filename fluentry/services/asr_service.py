@@ -1,7 +1,7 @@
 """The dictation pipeline: capture, transcribe, format, deliver.
 
 `ASRService`, reduced to the part that is actually the app's behaviour rather
-than its macOS plumbing. It owns the recording lifecycle and drives:
+in one place. It owns the recording lifecycle and drives:
 
     microphone → buffer → silence gate → provider → text pipeline
                                                   → optional AI enhancement

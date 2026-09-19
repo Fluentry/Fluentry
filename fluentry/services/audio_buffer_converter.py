@@ -1,6 +1,6 @@
 """Convert captured PCM to the mono float stream the ASR models expect.
 
-A port of `AudioBufferConverter`. macOS used `AVAudioConverter`; here the same
+Turning captured audio into what a speech model wants. The same
 two operations — downmix to mono and resample — are done with NumPy, which is
 already a hard dependency of the model runtimes.
 

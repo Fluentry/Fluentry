@@ -37,7 +37,7 @@ from fluentry.services.hotkey_events import (
 
 
 class ModifierOnlyFlagsReplay:
-    """Mirror of the Swift test double driving the decision state machine."""
+    """A test double driving the decision state machine."""
 
     def __init__(self, shortcut: HotkeyShortcut) -> None:
         self.shortcut = shortcut
@@ -175,7 +175,7 @@ def test_hotkey_session_lock_detection():
     assert session_is_locked({"LockedHint": True})
     assert not session_is_locked({"LockedHint": False})
     assert not session_is_locked({})
-    # The macOS key stays accepted so restored settings keep working.
+    # The legacy key stays accepted so restored settings keep working.
     assert session_is_locked({"CGSSessionScreenIsLocked": True})
 
 

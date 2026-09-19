@@ -1,6 +1,6 @@
 """The transformations applied between raw ASR output and typed text.
 
-Extracted from `ASRService`, in the same order the macOS build applies them:
+The steps a raw transcript passes through, in the order they run:
 
 1. filler-word removal,
 2. custom dictionary replacement,
@@ -198,7 +198,7 @@ class TextPipeline:
         """The whole pipeline.
 
         `enhanced_text` is the AI provider's output when enhancement ran; the
-        cleanup steps are never re-applied to it, matching the macOS build.
+        cleanup steps are never re-applied to it.
         """
         context = context or PipelineContext()
         cleaned = self.clean(raw_text, context)

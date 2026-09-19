@@ -1,6 +1,6 @@
 """Request, response and configuration types for the local API.
 
-A port of `LocalAPIModels.swift`. Two properties carry over and both matter:
+Two properties of this API matter more than the rest:
 the API binds to loopback only, so it is never reachable from the network,
 and it is **off by default** — a dictation app that opened an HTTP port
 without being asked would be a surprise.
@@ -67,7 +67,7 @@ class Response:
 
 def _encode(value: Any) -> Any:
     if isinstance(value, (datetime, date)):
-        return value.isoformat()  # ISO 8601, as the macOS encoder produced.
+        return value.isoformat()  # ISO 8601.
     raise TypeError(f"Cannot encode {type(value)!r}")
 
 

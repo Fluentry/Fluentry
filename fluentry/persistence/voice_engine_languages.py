@@ -5,10 +5,6 @@ model and with whatever setting that model needs to be told about the
 language — Whisper wants a language code, Cohere and Nemotron want their own
 enums, Parakeet detects the language itself.
 
-The Apple Speech routes are kept in the candidate list so the structure
-matches the original, but they are always filtered out here: those models
-report `is_supported == False` on Linux and therefore never appear in
-`available_models()`.
 """
 
 from __future__ import annotations
@@ -21,7 +17,6 @@ from .settings_types import CohereLanguage
 from .speech_model import SpeechModel
 
 AUTOMATIC = "automatic"
-APPLE_SPEECH = "apple_speech"
 COHERE = "cohere"
 NEMOTRON = "nemotron"
 WHISPER = "whisper"
@@ -94,11 +89,6 @@ COHERE_LANGUAGE_MAP = {
 }
 
 WHISPER_MODEL_ORDER = [SpeechModel.WHISPER_SMALL, SpeechModel.WHISPER_LARGE_TURBO]
-
-APPLE_SPEECH_ANALYZER_LOCALES = {
-    "de": "de-DE", "en": "en-US", "es": "es-US", "fr": "fr-FR", "it": "it-IT",
-    "ja": "ja-JP", "ko": "ko-KR", "pt": "pt-BR", "zh": "zh-CN",
-}
 
 #: Whisper's own language codes. A language not in here cannot be routed to
 #: Whisper even though Whisper is installed.
@@ -259,10 +249,6 @@ def whisper_language_code(language_id: str) -> str | None:
     return WHISPER_LANGUAGE_CODE_MAP.get(language_id)
 
 
-def _apple_speech_analyzer_locale(language_id: str) -> str | None:
-    return APPLE_SPEECH_ANALYZER_LOCALES.get(language_id)
-
-
 def _route_candidates(language: VoiceEngineLanguage) -> list[VoiceEngineLanguageRoute]:
     routes: list[VoiceEngineLanguageRoute] = []
 
@@ -293,12 +279,6 @@ def _route_candidates(language: VoiceEngineLanguage) -> list[VoiceEngineLanguage
         for model in WHISPER_MODEL_ORDER:
             add(model, LanguageBinding(WHISPER, code))
 
-    locale = _apple_speech_analyzer_locale(language.id)
-    if locale is not None:
-        add(SpeechModel.APPLE_SPEECH_ANALYZER, LanguageBinding(APPLE_SPEECH, locale))
-
-    # The legacy Apple Speech route needed SFSpeechRecognizer's supported
-    # locales, which no Linux system reports, so it never has a candidate.
     return routes
 
 
@@ -376,6 +356,4 @@ def apply(route: VoiceEngineLanguageRoute, settings) -> None:
         settings.selected_cohere_language = CohereLanguage(route.binding.value)
     elif route.binding.kind == NEMOTRON:
         settings.selected_nemotron_language = route.binding.value
-    elif route.binding.kind == APPLE_SPEECH:
-        settings.selected_system_speech_locale_identifier = route.binding.value
     # AUTOMATIC: the model detects the language itself.

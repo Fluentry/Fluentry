@@ -1,8 +1,8 @@
 """Unified LLM transport for every mode (dictation cleanup, command, rewrite).
 
-A port of `LLMClient.swift`: HTTP + SSE streaming, thinking-token extraction,
+HTTP and SSE streaming, thinking-token extraction,
 tool-call assembly and retries. `URLSession` is replaced by a small `Transport`
-protocol so tests can inject a fixture stream the way the Swift tests inject a
+protocol so a test can inject a fixture stream in place of a
 `URLProtocol`.
 """
 

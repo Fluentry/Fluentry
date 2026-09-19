@@ -42,7 +42,7 @@ def reset_distinct_id(path: Path | None = None) -> None:
     (path or identity_path()).unlink(missing_ok=True)
 
 
-#: Stored alongside the other defaults, under the macOS key names, so a
+#: Stored alongside the other defaults, under stable key names, so a
 #: restored backup keeps the same install age.
 FIRST_OPEN_KEY = "AnalyticsFirstOpenAt"
 

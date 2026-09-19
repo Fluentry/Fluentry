@@ -1,9 +1,9 @@
 """Linux input keycodes and modifier flags.
 
-The macOS original keyed everything off Carbon virtual key codes. On Linux the
+The
 only identifier that survives both X11 and Wayland is the kernel `evdev` code,
 so that is what a shortcut stores. Modifier *flag* raw values deliberately keep
-the macOS bit positions so serialized settings and backups stay comparable
+stable bit positions so serialized settings and backups stay comparable
 across the two implementations.
 """
 
@@ -13,14 +13,14 @@ from enum import IntFlag
 
 
 class ModifierFlags(IntFlag):
-    """Modifier bitmask. Raw values mirror the macOS build so backups round-trip."""
+    """Modifier bitmask. The raw values are stable, so backups round-trip."""
 
     NONE = 0
     CAPS_LOCK = 1 << 16
     SHIFT = 1 << 17
     CONTROL = 1 << 18
-    ALT = 1 << 19  # macOS "option"
-    SUPER = 1 << 20  # macOS "command"
+    ALT = 1 << 19
+    SUPER = 1 << 20
     NUMERIC_PAD = 1 << 21
     HELP = 1 << 22
     FUNCTION = 1 << 23
@@ -148,7 +148,7 @@ MODIFIER_KEY_FLAGS: dict[int, ModifierFlags] = {
     KEY_RIGHTSHIFT: ModifierFlags.SHIFT,
 }
 
-#: Stable display order for a modifier-only chord, mirroring the macOS ordering
+#: Stable display order for a modifier-only chord, following the order
 #: (fn, then super, alt, control, shift; left before right).
 MODIFIER_SORT_PRIORITY: dict[int, int] = {
     KEY_FN: 0,

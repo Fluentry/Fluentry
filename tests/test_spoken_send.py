@@ -169,6 +169,6 @@ def test_voice_activity_grace_ignores_only_the_recognition_tail():
 def test_available_send_commands_map_to_expected_modifiers():
     assert SpokenSendKey.ENTER.modifier_flags == ModifierFlags.NONE
     assert SpokenSendKey.SHIFT_ENTER.modifier_flags == ModifierFlags.SHIFT
-    # macOS used Command+Enter; Ctrl+Enter is the Linux chord for the same thing.
+    # Ctrl+Enter is the chord that sends in most Linux applications.
     assert SpokenSendKey.COMMAND_ENTER.modifier_flags == ModifierFlags.CONTROL
     assert SpokenSendKey.COMMAND_ENTER.display_name == "Ctrl + Enter"

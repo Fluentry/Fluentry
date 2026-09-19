@@ -2,7 +2,7 @@
 
 `PasteKeyCodeResolver` and `PasteKeyCodeCache`, retargeted at xkb.
 
-The macOS problem was Dvorak and non-Latin layouts, where the physical key
+Dvorak and non-Latin layouts are the problem: there the physical key
 that types "v" is not the key that means Paste. Linux has the same problem
 whenever a non-QWERTY layout is active, so the fix is identical: ask the
 current layout which keycode produces "v", cache the answer, and refresh it

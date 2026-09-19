@@ -6,8 +6,8 @@ that was just inserted, that edit is a strong signal the model misheard them.
 correction; `AutomaticDictionarySuggestionPolicy` decides whether it is worth
 interrupting the user to offer a dictionary entry.
 
-A port of `AutomaticDictionaryCorrectionTracker.swift`. Ranges are
-`TextRange(location, length)` over Python string indices — the macOS original
+Watching for the same manual fix twice and offering to learn it. Ranges
+are `(location, length)` over string indices — the tracker
 used UTF-16 offsets for the same purpose.
 """
 

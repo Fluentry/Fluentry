@@ -21,7 +21,7 @@ from typing import Callable, Sequence, TypeVar
 
 GIGABYTE = 1024 * 1024 * 1024
 
-#: The two models the macOS build shipped; kept so a stored choice resolves.
+#: The two models this has ever offered; kept so a stored choice resolves.
 MINI_MODEL_ID = "fluid-1-mini-96k-dflash"
 PICO_MODEL_ID = "fluid-1-pico-96k-dflash"
 

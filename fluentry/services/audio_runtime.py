@@ -3,8 +3,7 @@
 Ports of `ThreadSafeAudioBuffer`, `AudioEngineRetirementDrain`,
 `AudioCaptureReadinessGate` and `BoundedAudioHardwareQueue`.
 
-The macOS versions protected against `-[AVAudioEngine dealloc]` blocking on
-CoreAudio's internal queue. The Linux equivalents guard the same shape of
+These guard the shape of
 problem: a PipeWire/PortAudio stream teardown can block while the server
 re-negotiates a route, so teardown is serialized on its own thread, callers
 can be released without aborting the native call, and a new stream is never

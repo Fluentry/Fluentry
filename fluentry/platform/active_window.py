@@ -4,8 +4,8 @@ Replaces `ActiveAppMonitor`. The focused app decides which prompt profile
 applies and which app-specific formatting rules run, so the app needs a name
 and a stable identifier for it.
 
-macOS always had this. Linux does not: X11 exposes it through `_NET_ACTIVE_WINDOW`,
-but Wayland deliberately hides it from ordinary clients. Where a compositor
+X11 exposes this through `_NET_ACTIVE_WINDOW`, but Wayland deliberately
+hides it from ordinary clients. Where a compositor
 offers an interface (GNOME Shell's Eval is disabled by default; KDE exposes
 KWin scripting) it is used, and otherwise the context is simply empty —
 which every consumer already handles, because app-specific behaviour is an

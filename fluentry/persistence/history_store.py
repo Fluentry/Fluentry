@@ -1,6 +1,6 @@
 """In-memory transcription history with durable backing.
 
-Mirrors the macOS `TranscriptionHistoryStore`:
+The dictation history, in memory and on disk:
 
 * edits made while the initial load is still running are merged into the
   loaded snapshot rather than lost,
@@ -530,5 +530,5 @@ class TranscriptionHistoryStore:
             self._in_summary_refresh = False
 
     def wait_for_today_summary(self) -> None:
-        """Present for parity with the async macOS API; work is already done."""
+        """Present so callers can await a flush; writes are already done."""
         return None

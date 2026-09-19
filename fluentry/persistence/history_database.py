@@ -1,6 +1,6 @@
 """SQLite storage for transcription history.
 
-Same schema and guarantees as the macOS build: one JSON payload per entry (not
+One JSON payload per entry (not
 one blob for the whole history), so a single dictation writes a single row; a
 failed write rolls back so a failed replacement can never leave history empty.
 """

@@ -73,8 +73,8 @@ def default_base_url(provider_id: str) -> str:
 def default_models(provider_id: str) -> list[str]:
     """Models to offer before the provider has been asked.
 
-    The macOS build shipped a curated list per provider. Nothing here
-    hard-codes model names that go stale, so the list is empty and the
+    Nothing here hard-codes model names that go stale, so the list is
+    empty and the
     Voice Engine screen fetches the real one from the provider.
     """
     return []
@@ -177,9 +177,8 @@ def private_ai_verified_model_id(settings: SettingsStore, runtime=None) -> str |
 class PrivateAIRuntime:
     """Stands in for the local-model runtime.
 
-    The shipped build has none — the macOS app resolved this through a
-    private framework that is not part of the source tree — so the default
-    reports unavailable and every Private AI route resolves to nothing.
+    No local runtime ships with the app, so the default reports
+    unavailable and every Private AI route resolves to nothing.
     """
 
     is_available: bool = False

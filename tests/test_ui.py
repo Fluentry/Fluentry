@@ -111,7 +111,7 @@ def test_the_stylesheet_carries_the_accent(qt_app):
 
 
 def test_the_palette_uses_adwaita_greys():
-    """Not the macOS greys the original shipped: these are GNOME's."""
+    """These are Adwaita's own values, not an approximation of them."""
     light = Palette(is_dark=False, accent="#E95420")
     dark = Palette(is_dark=True, accent="#E95420")
     assert light.window == "#fafafa"

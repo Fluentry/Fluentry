@@ -14,8 +14,8 @@
   --text: #f4f4f5;
   --text-dim: #a1a1aa;
   --text-faint: #71717a;
-  --accent: #e95420;
-  --accent-soft: #ff7a4d;
+  --accent: #f44b18;
+  --accent-soft: #ff6a3d;
   --accent-ink: #ffffff;
   --good: #3fb950;
   --warn: #d29922;
@@ -99,7 +99,7 @@ a { color: inherit; }
 .topbar .wrap { display: flex; align-items: center; gap: 14px; height: 62px; }
 
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-family: var(--display); letter-spacing: -0.01em; }
-.brand svg { display: block; }
+.brand-mark { display: block; height: 21px; width: auto; }
 
 .topnav { margin-left: auto; display: flex; align-items: center; gap: 26px; }
 .topnav a { color: var(--text-dim); text-decoration: none; font-size: 0.93rem; transition: color 0.2s; }

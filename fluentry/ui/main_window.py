@@ -2,7 +2,7 @@
 
 A port of `ContentView`'s navigation shell. Closing the window hides it
 rather than quitting, because the app's real home is the tray and the global
-hotkey — the same behaviour as the macOS menu-bar app.
+hotkey.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from .pages import (
     VoiceEnginePage,
     WelcomePage,
 )
-from .tray import draw_microphone_icon
+from .tray import window_icon
 from .widgets import HeaderBar, button
 
 SIDEBAR_ITEMS = [
@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         #: Set by the application; the header bar's Settings button.
         self.on_open_settings = None
         self.setWindowTitle("Fluentry")
-        self.setWindowIcon(draw_microphone_icon(palette.accent))
+        self.setWindowIcon(window_icon(palette.accent))
         self.resize(1000, 680)
         self.setMinimumSize(760, 520)
 
@@ -120,7 +120,7 @@ class MainWindow(QMainWindow):
         self.activateWindow()
 
     def set_palette(self, palette) -> None:
-        self.setWindowIcon(draw_microphone_icon(palette.accent))
+        self.setWindowIcon(window_icon(palette.accent))
         for page_widget in self.pages.values():
             setter = getattr(page_widget, "set_palette", None)
             if callable(setter):

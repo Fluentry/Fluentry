@@ -1,6 +1,6 @@
 """The recording overlay.
 
-A port of `BottomOverlayView` / `NotchOverlayManager`. macOS had a notch to
+The small window that shows a dictation is running. There is no notch to
 work around; Linux does not, so the top position is simply a floating panel
 in the same place. Everything else carries over: four sizes, a live level
 meter, a streaming transcription preview, and a spoken-send countdown.

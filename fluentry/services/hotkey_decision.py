@@ -1,6 +1,6 @@
 """Modifier-only shortcut press state machine.
 
-A direct port of `ModifierOnlyShortcutFlagsDecision` from the macOS build. It
+The rule for modifier-only shortcuts, kept pure and side-effect free. It
 is pure and side-effect free so the start/finish rules can be tested without a
 real input grab.
 

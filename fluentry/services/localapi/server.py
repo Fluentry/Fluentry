@@ -1,9 +1,8 @@
 """The loopback HTTP server.
 
-A port of `LocalAPIServer`. macOS used an `NWListener` that rejected any
-connection whose endpoint was not loopback; here the socket is bound to
-127.0.0.1 in the first place, which is the same guarantee enforced one layer
-lower.
+The socket is bound to 127.0.0.1 rather than filtering connections after
+accepting them, so the loopback-only guarantee is enforced by the kernel
+rather than by this code.
 """
 
 from __future__ import annotations

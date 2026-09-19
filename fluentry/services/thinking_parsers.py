@@ -1,6 +1,6 @@
 """Parsers for the thinking tokens different model families emit.
 
-A port of `ThinkingParsers.swift`. Three shapes exist in the wild:
+Three shapes exist in the wild:
 
 * `<think>…</think>` inline tags (Qwen, most open models),
 * thinking with **no** opening tag, using `</think>` purely as a separator

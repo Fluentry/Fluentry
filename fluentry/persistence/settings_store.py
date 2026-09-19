@@ -1,7 +1,7 @@
 """Application settings.
 
-A port of the macOS `SettingsStore`. Every persisted key keeps its original
-name and default so a backup exported by the macOS build restores here without
+Every setting the app has, in one place. Keys and defaults are stable, so
+a backup restores
 loss, and the getter semantics ("unset" vs "explicitly false") are reproduced
 exactly — several features depend on that distinction.
 """
@@ -222,8 +222,7 @@ class Keys:
     selected_whisper_language_code = "SelectedWhisperLanguageCode"
     selected_cohere_language = "SelectedCohereLanguage"
     selected_nemotron_language = "SelectedNemotronLanguage"
-    selected_system_speech_locale_identifier = "SelectedAppleSpeechLocaleIdentifier"
-    external_model_artifacts_directories = "ExternalCoreMLArtifactsDirectories"
+    external_model_artifacts_directories = "ExternalModelArtifactsDirectories"
 
     overlay_position = "OverlayPosition"
     notch_presentation_mode = "NotchPresentationMode"
@@ -255,7 +254,7 @@ class Keys:
     weekends_dont_break_streak = "WeekendsDontBreakStreak"
 
 
-# Private-AI budgeting constants, preserved from the macOS build.
+# Private-AI budgeting constants.
 PRIVATE_AI_CONTEXT_TOKEN_LIMIT_RANGE = (2048, 8192)
 PRIVATE_AI_CONTEXT_TOKEN_LIMIT_STEP = 512
 DEFAULT_PRIVATE_AI_CONTEXT_TOKEN_LIMIT = 4096
@@ -273,7 +272,7 @@ MICROPHONE_PRIORITY_MIGRATION_VERSION = 4
 
 #: The id the Private AI provider registers under. The shipped build has
 #: no local model runtime, so nothing claims it, but a stored selection
-#: naming it still has to resolve the same way it did on macOS.
+#: naming it still has to resolve rather than error.
 PRIVATE_AI_PROVIDER_ID = "__private_ai_provider__"
 PRIVATE_AI_PROMPT_SELECTION_ID = "__PRIVATE_AI_PROVIDER__"
 
@@ -286,7 +285,7 @@ def _ceil_div(numerator: int, denominator: int) -> int:
 
 
 def _round_half_up(value: float) -> int:
-    """Swift's `.rounded()` rounds halves away from zero; Python's round() does not."""
+    """Round halves away from zero, which Python's round() does not do."""
     import math
 
     if value >= 0:
@@ -302,7 +301,7 @@ class PrivateAIDictationTokenBudget:
 
 @dataclass
 class SettingsBackupPayload:
-    """Mirror of the macOS `SettingsBackupPayload`.
+    """The settings half of a backup file.
 
     Fields that are `None` mean "absent from this backup file", which restore
     treats as "leave the current value alone" — that is how older backups keep
@@ -733,7 +732,7 @@ class SettingsStore:
 
     @staticmethod
     def default_primary_dictation_shortcut() -> HotkeyShortcut:
-        """Right Alt, the Linux stand-in for the macOS Right Option default."""
+        """Right Alt: reachable with one thumb and rarely bound elsewhere."""
         return HotkeyShortcut.keyboard(KEY_RIGHTALT, ModifierFlags.NONE)
 
     @property
@@ -993,7 +992,7 @@ class SettingsStore:
 
         Direct PipeWire/ALSA capture is the required backend; a stored
         "disabled" preference from an older build is deliberately ignored,
-        exactly as the macOS build ignores its legacy AVAudioEngine flag.
+        so the newer setting always wins.
         """
         return True
 
@@ -1755,14 +1754,6 @@ class SettingsStore:
     @selected_nemotron_language.setter
     def selected_nemotron_language(self, value: str) -> None:
         self._set(Keys.selected_nemotron_language, value)
-
-    @property
-    def selected_system_speech_locale_identifier(self) -> str | None:
-        return self.defaults.string(Keys.selected_system_speech_locale_identifier)
-
-    @selected_system_speech_locale_identifier.setter
-    def selected_system_speech_locale_identifier(self, value: str | None) -> None:
-        self._set(Keys.selected_system_speech_locale_identifier, value)
 
     @property
     def external_model_artifacts_directories(self) -> list[str]:
@@ -2538,7 +2529,6 @@ class SettingsStore:
                 ),
                 "selectedCohereLanguage": self.selected_cohere_language.value,
                 "selectedNemotronLanguage": self.selected_nemotron_language,
-                "selectedAppleSpeechLocaleIdentifier": self.selected_system_speech_locale_identifier,
                 "hotkeyShortcut": self.hotkey_shortcut.to_dict(),
                 "primaryDictationShortcuts": [s.to_dict() for s in self.primary_dictation_shortcuts],
                 "promptModeHotkeyShortcut": self.prompt_mode_hotkey_shortcut.to_dict(),
@@ -2693,8 +2683,6 @@ class SettingsStore:
             )
         if present("selectedNemotronLanguage"):
             self.selected_nemotron_language = values["selectedNemotronLanguage"]
-        if present("selectedAppleSpeechLocaleIdentifier"):
-            self.selected_system_speech_locale_identifier = values["selectedAppleSpeechLocaleIdentifier"]
 
         primary = values.get("primaryDictationShortcuts")
         if primary is None:

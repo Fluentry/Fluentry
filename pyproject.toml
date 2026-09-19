@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluentry"
-version = "1.6.0"
+version = "1.6.1"
 description = "Open source voice-to-text dictation app for Linux with on-device AI enhancement"
 requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
@@ -28,6 +28,10 @@ fluentry = "fluentry.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["fluentry*"]
+
+[tool.setuptools.package-data]
+# The logo and its icon sizes ship with the app.
+fluentry = ["resources/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

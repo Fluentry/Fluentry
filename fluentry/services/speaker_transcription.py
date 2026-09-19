@@ -1,7 +1,7 @@
 """Speaker-labelled transcription of recorded files.
 
 Ports `SpeakerDiarizationService.mergeAdjacentTurns` and
-`SpeakerLabeledTranscriptionPolicy`. The diarizer itself was CoreML on macOS;
+Deciding how to label speakers in a transcript. The diarizer itself
 on Linux it is an ONNX segmentation + embedding pipeline, but every decision
 *about* its output is the portable part and lives here:
 

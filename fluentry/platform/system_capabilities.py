@@ -1,6 +1,6 @@
 """Host capability probes.
 
-macOS asked `CPUArchitecture.isAppleSilicon` and the OS version. The Linux
+What this machine can do. The
 equivalents that actually gate behaviour are total RAM, the session type
 (X11 vs Wayland), and which input/clipboard helpers are installed.
 """
@@ -69,7 +69,7 @@ def has_x_server() -> bool:
 class ToolAvailability:
     """Which external helpers are installed.
 
-    These replace the macOS Accessibility and Input Monitoring permissions:
+    What a desktop must provide before dictation can reach other apps:
     on Linux the equivalent "can we type into other apps" question is answered
     by whether a suitable synthetic-input tool exists for this session type.
     """

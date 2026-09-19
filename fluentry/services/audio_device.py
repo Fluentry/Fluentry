@@ -1,11 +1,11 @@
 """Audio device model.
 
-The macOS build described devices with a CoreAudio `AudioObjectID`, a UID and a
+A device is described by an id, a stable UID and a
 `transportType`. PipeWire (and PulseAudio) expose the same facts under
 different names, so the model is preserved and only its sources change:
 
 ==========================  =============================================
-macOS                       Linux (PipeWire / PulseAudio)
+Field                       Source (PipeWire / PulseAudio)
 ==========================  =============================================
 `AudioObjectID`             node id (`object.id`)
 device UID                  node name (`node.name`), stable across reboots

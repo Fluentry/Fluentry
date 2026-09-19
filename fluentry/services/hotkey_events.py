@@ -1,6 +1,6 @@
 """Input event kinds and subscription masks.
 
-The macOS build subscribed to a `CGEventMask`. On Linux the listener sits on
+The listener sits on
 evdev (or an X11 grab), but the *policy* is identical and worth keeping
 testable: the keyboard listener must never see mouse events, the mouse
 observer must only watch button-downs, and a mouse shortcut mask must only
@@ -67,7 +67,7 @@ def mouse_shortcut_event_mask(mouse_buttons: Iterable[int]) -> int:
 def session_is_locked(session_info: dict) -> bool:
     """Screen-lock check.
 
-    macOS read `CGSSessionScreenIsLocked`; on Linux the equivalent fact comes
+    Whether the screen is locked comes
     from logind's `LockedHint` property. Both keys are accepted so a caller can
     hand through whichever the platform provided.
     """

@@ -1,6 +1,6 @@
 """Machine facts attached to every analytics event.
 
-macOS read `physicalMemory` and `machdep.cpu.brand_string`. Linux reads
+This reads
 `/proc/meminfo` and `/proc/cpuinfo`, and reports the distribution rather than
 the kernel version, which is the useful grouping for a desktop app.
 """

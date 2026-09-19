@@ -1,7 +1,7 @@
 """Value types stored by `SettingsStore`.
 
-Raw values are preserved exactly from the macOS build so a backup exported
-there restores here. Where a case only made sense on macOS (Apple Speech, the
+Raw values are stable so a backup restores into any build. Where a case
+no longer applies (the
 MacBook notch) the case is kept for decoding and marked unsupported, rather
 than dropped, so restoring an old backup never fails.
 """
@@ -95,7 +95,7 @@ class DictationShortcutSlot(StrEnum):
 class PromptRoutingScope(StrEnum):
     """Whether a prompt applies everywhere or only to bound apps.
 
-    The raw values are the macOS ones, so a backup moves between platforms.
+    The raw values are stable, so a backup moves between builds.
     """
 
     ALL_APPS = "allApps"
@@ -192,7 +192,7 @@ class AppAIEnhancement(StrEnum):
 class AppPromptBinding:
     """Binds a prompt to an application.
 
-    macOS identified apps by bundle id; on Linux the stable identifier is the
+    The stable identifier for an application is the
     desktop-entry / WM_CLASS app id, stored in the same lowercase-normalised
     field so existing bindings keep working.
     """
@@ -772,7 +772,7 @@ class SpokenSendKey(StrEnum):
         return {
             SpokenSendKey.ENTER: ModifierFlags.NONE,
             SpokenSendKey.SHIFT_ENTER: ModifierFlags.SHIFT,
-            # macOS sent Command+Enter; Ctrl+Enter is the Linux equivalent chord.
+            # Ctrl+Enter is the chord that sends in most Linux apps.
             SpokenSendKey.COMMAND_ENTER: ModifierFlags.CONTROL,
         }[self]
 

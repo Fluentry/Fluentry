@@ -1,9 +1,8 @@
 """Parakeet, Nemotron and Cohere transcription through ONNX Runtime.
 
-These are the models the macOS build ran on CoreML via FluidAudio. The same
-checkpoints are published as ONNX exports, so on Linux they run through
-`onnxruntime` — which has CPU wheels everywhere and optional CUDA/ROCm
-execution providers.
+These checkpoints are published as ONNX exports, so they run through
+`onnxruntime` — which has CPU wheels everywhere and optional CUDA and
+ROCm execution providers.
 
 Two runtimes can drive them, and they want different file layouts:
 

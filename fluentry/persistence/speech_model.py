@@ -1,22 +1,17 @@
 """Speech model catalog.
 
-The macOS build ran Parakeet/Nemotron/Cohere through CoreML and offered Apple
-Speech as a zero-download option. On Linux the same model families are reached
-through different runtimes:
+Two runtimes cover every model offered here:
 
-==========================  ====================  ==========================
-macOS runtime               Linux runtime         Notes
-==========================  ====================  ==========================
-CoreML (FluidAudio)         ONNX Runtime          Parakeet / Nemotron / Cohere
-whisper.cpp (Metal)         whisper.cpp (CPU/     identical GGUF weights
-                            Vulkan/CUDA)
-Apple Speech / Analyzer     —                     no analogue; kept for
-                                                  decoding old backups only
-==========================  ====================  ==========================
+====================  ===========================================
+Runtime               Models
+====================  ===========================================
+ONNX Runtime          Parakeet, Nemotron, Cohere
+whisper.cpp           Whisper, from the same GGUF weights
+====================  ===========================================
 
-Raw values are unchanged so a backup from the macOS build still decodes; the
-two Apple cases simply report `is_supported == False` and are migrated to the
-platform default on load.
+A stored selection naming a model this build does not know falls back to
+the platform default rather than failing, so settings survive a model
+being retired.
 """
 
 from __future__ import annotations
@@ -32,12 +27,12 @@ class SpeechBackend(Enum):
     UNSUPPORTED = "unsupported"
 
 
-#: Qwen stays behind a preview flag, matching the macOS build.
+#: Qwen stays behind a preview flag until its export is verified here.
 QWEN_PREVIEW_ENABLED = False
 
 
 class SpeechModel(StrEnum):
-    # ONNX models (were CoreML on macOS)
+    # Served by ONNX Runtime
     PARAKEET_TDT = "parakeet-tdt"
     PARAKEET_TDT_V2 = "parakeet-tdt-v2"
     PARAKEET_REALTIME = "parakeet-realtime"
@@ -46,10 +41,6 @@ class SpeechModel(StrEnum):
     NEMOTRON_OFFLINE = "nemotron-3.5-offline"
     NEMOTRON_STREAMING = "nemotron-3.5-streaming"
     NEMOTRON_STREAMING_320 = "nemotron-3.5-streaming-320"
-
-    # macOS-only, retained so old backups decode
-    APPLE_SPEECH = "apple-speech"
-    APPLE_SPEECH_ANALYZER = "apple-speech-analyzer"
 
     # whisper.cpp
     WHISPER_TINY = "whisper-tiny"
@@ -63,8 +54,6 @@ class SpeechModel(StrEnum):
 
     @property
     def backend(self) -> SpeechBackend:
-        if self in _APPLE_MODELS:
-            return SpeechBackend.UNSUPPORTED
         if self.is_whisper_model:
             return SpeechBackend.WHISPER_CPP
         return SpeechBackend.ONNX
@@ -153,8 +142,7 @@ class SpeechModel(StrEnum):
                 continue
             if model is SpeechModel.NEMOTRON_STREAMING_320:
                 continue
-            # macOS hid the biggest Whisper builds from Intel Macs; the Linux
-            # equivalent constraint is available RAM.
+            # The biggest Whisper builds need more RAM than some machines have.
             if memory and model.required_memory_gb > memory:
                 continue
             models.append(model)
@@ -172,13 +160,11 @@ class SpeechModel(StrEnum):
 
     @staticmethod
     def supported_or_default(model: "SpeechModel | None") -> "SpeechModel":
-        """Replace an unsupported (macOS-only) selection with the platform default."""
+        """Replace a selection this build cannot run with the platform default."""
         if model is None or not model.is_supported:
             return SpeechModel.default_model()
         return model
 
-
-_APPLE_MODELS = frozenset({SpeechModel.APPLE_SPEECH, SpeechModel.APPLE_SPEECH_ANALYZER})
 
 _WHISPER_MODELS = frozenset(
     {
@@ -238,8 +224,6 @@ _DISPLAY_NAMES = {
     SpeechModel.NEMOTRON_OFFLINE: "Nemotron 3.5 Multilingual",
     SpeechModel.NEMOTRON_STREAMING: "Nemotron Speech 3.5 - Ultra Fast Low Latency",
     SpeechModel.NEMOTRON_STREAMING_320: "Nemotron Speech 3.5 - Ultra Fast Low Latency",
-    SpeechModel.APPLE_SPEECH: "Apple ASR Legacy (macOS only)",
-    SpeechModel.APPLE_SPEECH_ANALYZER: "Apple Speech (macOS only)",
     SpeechModel.WHISPER_TINY: "Whisper Tiny",
     SpeechModel.WHISPER_BASE: "Whisper Base",
     SpeechModel.WHISPER_SMALL: "Whisper Small",
@@ -257,8 +241,6 @@ _HUMAN_READABLE_NAMES = {
     SpeechModel.NEMOTRON_OFFLINE: "Nemotron 3.5 Multilingual",
     SpeechModel.NEMOTRON_STREAMING: "Nemotron Speech 3.5 - Ultra Fast Low Latency",
     SpeechModel.NEMOTRON_STREAMING_320: "Nemotron Speech 3.5 - Ultra Fast Low Latency",
-    SpeechModel.APPLE_SPEECH: "Apple ASR Legacy",
-    SpeechModel.APPLE_SPEECH_ANALYZER: "Apple Speech",
     SpeechModel.WHISPER_TINY: "Fast & Light",
     SpeechModel.WHISPER_BASE: "Standard Choice",
     SpeechModel.WHISPER_SMALL: "Balanced Speed & Accuracy",
@@ -277,8 +259,6 @@ _LANGUAGE_SUPPORT = {
     SpeechModel.NEMOTRON_OFFLINE: "Around 40 Languages",
     SpeechModel.NEMOTRON_STREAMING: "Around 40 Languages",
     SpeechModel.NEMOTRON_STREAMING_320: "Around 40 Languages",
-    SpeechModel.APPLE_SPEECH: "Unavailable on Linux",
-    SpeechModel.APPLE_SPEECH_ANALYZER: "Unavailable on Linux",
     SpeechModel.WHISPER_TINY: _WHISPER_LANGUAGES,
     SpeechModel.WHISPER_BASE: _WHISPER_LANGUAGES,
     SpeechModel.WHISPER_SMALL: _WHISPER_LANGUAGES,
@@ -296,8 +276,6 @@ _DOWNLOAD_SIZES = {
     SpeechModel.NEMOTRON_OFFLINE: "~530.8 MiB",
     SpeechModel.NEMOTRON_STREAMING: "~668.2 MiB",
     SpeechModel.NEMOTRON_STREAMING_320: "~668.2 MiB",
-    SpeechModel.APPLE_SPEECH: "Unavailable",
-    SpeechModel.APPLE_SPEECH_ANALYZER: "Unavailable",
     SpeechModel.WHISPER_TINY: "~43.9 MiB",
     SpeechModel.WHISPER_BASE: "~81.0 MiB",
     SpeechModel.WHISPER_SMALL: "~257.3 MiB",
@@ -321,8 +299,6 @@ _EXPECTED_BYTES = {
     SpeechModel.WHISPER_MEDIUM: 831_538_144,
     SpeechModel.WHISPER_LARGE_TURBO: 886_381_760,
     SpeechModel.WHISPER_LARGE: 1_668_741_440,
-    SpeechModel.APPLE_SPEECH: 0,
-    SpeechModel.APPLE_SPEECH_ANALYZER: 0,
 }
 
 _REQUIRED_MEMORY_GB = {
@@ -334,8 +310,6 @@ _REQUIRED_MEMORY_GB = {
     SpeechModel.NEMOTRON_OFFLINE: 8.0,
     SpeechModel.NEMOTRON_STREAMING: 8.0,
     SpeechModel.NEMOTRON_STREAMING_320: 8.0,
-    SpeechModel.APPLE_SPEECH: 2.0,
-    SpeechModel.APPLE_SPEECH_ANALYZER: 2.0,
     SpeechModel.WHISPER_TINY: 2.0,
     SpeechModel.WHISPER_BASE: 3.0,
     SpeechModel.WHISPER_SMALL: 4.0,

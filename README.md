@@ -8,10 +8,9 @@ Fluentry is a dictation app for Linux. Speech recognition runs on your own
 machine, so it works offline and nothing you say is sent anywhere unless you
 deliberately turn on AI cleanup and point it at a provider.
 
-It is a port of the macOS app [FluidVoice](https://github.com/altic-dev/FluidVoice),
-rebuilt in Python and PySide6 on Linux's own audio, input and desktop
-interfaces. Settings keys, enum values and the backup format are unchanged,
-so a backup moves between the two in either direction.
+Built in Python and PySide6 on the interfaces Linux already provides:
+PipeWire for audio, evdev for the keyboard, the freedesktop Secret
+Service for credentials, MPRIS for media, and Adwaita for the look.
 
 ---
 
@@ -146,26 +145,25 @@ expose it and are used when present.
 | `$XDG_STATE_HOME/fluentry/fluentry.log` | the log |
 | `~/.config/autostart/fluentry.desktop` | the "launch at login" entry |
 
-An installation from before the rename migrates its `fluidvoice`
-directories across automatically on first run.
+An installation from before the rename migrates its old directories
+across automatically on first run.
 
-## How the port works
+## Architecture
 
-| On macOS | In Fluentry |
+| Concern | How it is served |
 |---|---|
-| CoreAudio device list | PipeWire (`pw-dump`), PulseAudio (`pactl`), ALSA |
-| AVAudioEngine capture | PortAudio via `sounddevice`, else `pw-record` / `parec` |
-| CGEventTap hotkeys | evdev, else pynput on X11 |
-| Accessibility API typing | `xdotool`, `ydotool` or `wtype` |
-| NSPasteboard | Qt clipboard, `wl-copy`, `xclip` or `xsel` |
-| Keychain | freedesktop Secret Service (`secret-tool`) |
-| MediaRemote | MPRIS via `playerctl` |
-| Clamshell detection | ACPI lid state |
-| Login item | `~/.config/autostart/fluentry.desktop` |
-| whisper.cpp with CoreML | faster-whisper, or a `whisper-cli` binary |
-| FluidAudio CoreML models | the same checkpoints through ONNX Runtime |
-| UserDefaults | JSON under `$XDG_CONFIG_HOME` |
-| SwiftUI | PySide6, styled to GNOME's Adwaita conventions |
+| Audio devices | PipeWire (`pw-dump`), PulseAudio (`pactl`), ALSA |
+| Capture | PortAudio via `sounddevice`, else `pw-record` / `parec` |
+| Global hotkeys | evdev, else pynput on X11 |
+| Typing into apps | `xdotool`, `ydotool` or `wtype` |
+| Clipboard | Qt, `wl-copy`, `xclip` or `xsel` |
+| Credentials | freedesktop Secret Service (`secret-tool`) |
+| Media control | MPRIS via `playerctl` |
+| Lid detection | ACPI lid state |
+| Launch at login | `~/.config/autostart/fluentry.desktop` |
+| Speech | faster-whisper, onnx-asr, sherpa-onnx |
+| Settings | JSON under `$XDG_CONFIG_HOME` |
+| Interface | PySide6, styled to GNOME's Adwaita conventions |
 
 ## Development
 
@@ -184,5 +182,8 @@ The website lives in [`site/`](site/); publishing copies it to the
 
 ## Licence
 
-GPL-3.0-or-later, the same licence as FluidVoice, from which this is
-derived. See [LICENSE](LICENSE).
+GPL-3.0-or-later. See [LICENSE](LICENSE).
+
+Fluentry began as a Linux reimplementation of an existing GPL-3.0
+dictation app; that lineage is recorded in [NOTICE](NOTICE) as the licence
+requires.

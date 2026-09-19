@@ -1,6 +1,6 @@
 """`UserDefaults` equivalent for Linux.
 
-macOS gave the app a typed, lazily-persisted preferences domain. The closest
+A typed, lazily-persisted preferences domain. The closest
 Linux convention is a JSON file under `$XDG_CONFIG_HOME`, so that is what backs
 the real store. The typed accessor semantics are copied exactly, because a
 surprising amount of the app's behaviour depends on them:
@@ -141,7 +141,7 @@ class Defaults:
     def json(self, key: str) -> Any | None:
         """Decode a value stored as a JSON payload.
 
-        macOS stored codable structures as `Data`; here they are stored as
+        Structured values are stored as
         native JSON, but a string payload is still accepted so files written by
         an older build keep loading.
         """

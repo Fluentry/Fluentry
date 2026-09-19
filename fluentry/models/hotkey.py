@@ -1,6 +1,6 @@
 """Hotkey shortcut value type.
 
-A direct port of the macOS `HotkeyShortcut`, retargeted at evdev key codes.
+A shortcut the user can press, described in evdev key codes.
 Every behaviour the original guaranteed is preserved:
 
 * a modifier-only shortcut (tap Right Alt) is distinct from a chord,

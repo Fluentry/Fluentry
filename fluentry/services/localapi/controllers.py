@@ -1,9 +1,7 @@
 """The route handlers.
 
-Ports of `HealthController`, `HistoryAPIController`, `DictionaryAPIController`
-and `InferenceAPIController`. Where macOS reached for singletons, each
-controller here takes the running `AppState`, so tests can hand it a
-stand-in.
+One controller per group of routes. Each takes the running `AppState`
+rather than reaching for a global, so a test can hand it a stand-in.
 """
 
 from __future__ import annotations

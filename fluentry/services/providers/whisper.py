@@ -1,6 +1,6 @@
 """Whisper transcription.
 
-The macOS build ran Whisper GGUF weights through whisper.cpp. On Linux the
+The
 same weights are served by CTranslate2 via `faster-whisper`, which ships
 prebuilt wheels for x86-64 and aarch64 and is substantially faster on CPU
 than a generic build of whisper.cpp. The model *identities* are unchanged —

@@ -100,7 +100,7 @@ class OnboardingFlow:
         try:
             return Step(self.settings.onboarding_current_step)
         except ValueError:
-            # An out-of-range stored step lands on the voice model, as on macOS.
+            # An out-of-range stored step lands on the voice model.
             return Step.VOICE_MODEL
 
     @step.setter

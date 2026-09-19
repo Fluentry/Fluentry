@@ -1,6 +1,6 @@
 """Analytics vocabulary.
 
-A port of `AnalyticsEvent.swift`. The event names and property shapes are
+The event names and property shapes are
 unchanged so the two platforms report into the same schema; only `platform`
 and `$os` differ.
 """

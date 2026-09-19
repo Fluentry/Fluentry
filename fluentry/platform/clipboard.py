@@ -7,8 +7,8 @@ The important behaviour is the *preservation* rule, which is unchanged: when
 the app borrows the clipboard to paste a transcription, it restores what was
 there before — but only if the user has not copied something since. Equal text
 is not ownership: the user may have copied that same text with different
-formats, and their newer clipboard always wins. macOS answered this with
-`NSPasteboard.changeCount`; here a monotonically increasing generation counter
+formats, and the newer clipboard always wins. One answer is
+a change counter; here a monotonically increasing generation counter
 plays the same role.
 """
 
@@ -219,7 +219,7 @@ def make_clipboard() -> Clipboard:
 
 
 class ClipboardService:
-    """Thin logging wrapper, matching the macOS `ClipboardService` API."""
+    """Thin logging wrapper around whichever backend is in use."""
 
     def __init__(self, clipboard: Clipboard | None = None) -> None:
         self.clipboard = clipboard if clipboard is not None else InMemoryClipboard()

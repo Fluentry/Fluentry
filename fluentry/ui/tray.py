@@ -1,12 +1,12 @@
 """System tray icon and menu.
 
-A port of `MenuBarManager`. The macOS menu bar becomes a freedesktop tray
-icon (StatusNotifierItem on KDE/GNOME-with-AppIndicator, legacy XEmbed
-elsewhere) — Qt picks whichever the desktop provides.
+A freedesktop tray icon (StatusNotifierItem on KDE and
+GNOME-with-AppIndicator, legacy XEmbed elsewhere) — Qt picks whichever
+the desktop provides.
 
-The icon is drawn rather than shipped as a bitmap so it stays crisp at any
-tray size and can show recording state by colour, the way the macOS template
-image did.
+The tray shows the app's own mark. Recording state is a dot drawn over
+it rather than a colour change, because the mark is a fixed-colour brand
+asset — and a dot reads at 22px where a hue shift does not.
 """
 
 from __future__ import annotations
@@ -19,6 +19,42 @@ from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPainterPath, QPixma
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
 ICON_SIZE = 64
+
+
+def window_icon(accent: str) -> QIcon:
+    """The icon a window and the switcher show."""
+    from ..resources import app_icon, exists
+
+    return app_icon() if exists("icon-64.png") else draw_microphone_icon(accent)
+
+
+def tray_icon(is_recording: bool, accent: str) -> QIcon:
+    """The mark, with a dot over it while a dictation is running."""
+    from ..resources import app_icon, exists, path
+
+    if not exists("icon-64.png"):
+        # No artwork installed: fall back to the drawn glyph.
+        return draw_microphone_icon(accent)
+    if not is_recording:
+        return app_icon()
+
+    icon = QIcon()
+    for size in (22, 32, 48, 64, 128):
+        file = path(f"icon-{size}.png")
+        if not file.is_file():
+            continue
+        pixmap = QPixmap(str(file))
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(accent))
+        diameter = max(6, round(pixmap.width() * 0.42))
+        painter.drawEllipse(
+            pixmap.width() - diameter, pixmap.height() - diameter, diameter, diameter
+        )
+        painter.end()
+        icon.addPixmap(pixmap)
+    return icon
 
 
 def draw_microphone_icon(colour: str, size: int = ICON_SIZE) -> QIcon:
@@ -113,8 +149,7 @@ class TrayController:
 
     def set_recording(self, is_recording: bool) -> None:
         self._is_recording = is_recording
-        colour = self._palette.accent if is_recording else self._palette.text
-        self.tray.setIcon(draw_microphone_icon(colour))
+        self.tray.setIcon(tray_icon(is_recording, self._palette.accent))
         self._toggle_action.setText("Stop Dictation" if is_recording else "Start Dictation")
         self.tray.setToolTip("Fluentry — recording" if is_recording else "Fluentry")
 
@@ -123,7 +158,7 @@ class TrayController:
 
     def notify(self, title: str, message: str) -> None:
         if self.tray.isVisible():
-            self.tray.showMessage(title, message, draw_microphone_icon(self._palette.accent), 4000)
+            self.tray.showMessage(title, message, tray_icon(False, self._palette.accent), 4000)
 
     def _on_activated(self, reason) -> None:
         # A left click opens the window; the context menu handles the rest.

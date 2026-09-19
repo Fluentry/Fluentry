@@ -6,7 +6,7 @@ where that reading is unambiguous. A port of
 rejection lists that keep ordinary prose ("meet at noon") untouched.
 
 The app lists gain the Linux terminals and editors that play the same role as
-their macOS counterparts.
+the spoken-punctuation rules.
 """
 
 from __future__ import annotations

@@ -1,8 +1,8 @@
 """Colours and stylesheet.
 
-The palette follows **Adwaita**, GNOME's design language, rather than the
-macOS greys the original used, so Fluentry sits alongside Ubuntu's own
-apps instead of looking imported: Adwaita's window/view/card greys, Yaru
+The palette follows **Adwaita**, GNOME's design language, so Fluentry
+sits alongside Ubuntu's own apps rather than looking imported:
+Adwaita's window, view and card greys, Yaru
 accent colours, the Ubuntu font stack, switch-style toggles and a header
 bar at the top of each window.
 

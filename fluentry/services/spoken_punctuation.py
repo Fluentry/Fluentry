@@ -5,7 +5,7 @@ untouched — a bare "comma" in a sentence stays a word.
 
 A direct port of `ASRService+SpokenPunctuationFormatting`.
 
-The macOS source carries an unused second rule table with per-symbol context
+An earlier design carried a second rule table with per-symbol context
 requirements ("dot" only becomes "." next to a domain, and so on). The shipped
 path builds its rules from the user's dictionary without those flags, because
 the prefix already resolves the ambiguity: the user said "literal", so they

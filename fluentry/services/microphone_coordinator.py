@@ -10,7 +10,7 @@ A port of `MicrophonePreferenceCoordinator`. Two jobs:
    usable right now, skipping suppressed devices and, on a laptop with the lid
    shut, the internal mic that is no longer reachable.
 
-macOS called the lid-shut state "clamshell"; the Linux equivalent reads
+The lid-shut state reads
 `/proc/acpi/button/lid/*/state`, but the rule is identical.
 """
 

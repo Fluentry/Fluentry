@@ -1,8 +1,7 @@
 """Shared widgets.
 
-The Linux counterparts of the small SwiftUI components (`ThemedCard`,
-`SetupComponents`, the stat tiles). Kept plain so the whole UI stays
-readable: a card is a frame, a metric tile is two labels.
+The small pieces every screen is built from. Kept deliberately plain so
+the UI stays readable: a card is a frame, a metric tile is two labels.
 """
 
 from __future__ import annotations
@@ -51,6 +50,28 @@ def hint_label(text: str) -> QLabel:
     label = QLabel(text)
     label.setObjectName("Hint")
     label.setWordWrap(True)
+    return label
+
+
+def brand_lockup(palette, height: int = 22):
+    """The logo with the wordmark, in whichever variant will be legible.
+
+    Returns None when the artwork is not installed, so callers can fall
+    back to a plain text title.
+    """
+    from ..resources import wordmark
+
+    source = wordmark(bool(getattr(palette, "is_dark", False)))
+    if not source.is_file():
+        return None
+    pixmap = QPixmap(str(source))
+    if pixmap.isNull():
+        return None
+    label = QLabel()
+    label.setPixmap(
+        pixmap.scaledToHeight(height, Qt.TransformationMode.SmoothTransformation)
+    )
+    label.setAccessibleName("Fluentry")
     return label
 
 

@@ -2,7 +2,7 @@
 
 `TypingService`, retargeted at Linux input synthesis.
 
-macOS had one mechanism (`CGEvent` plus the Accessibility API) gated behind
+Other desktops have a single mechanism gated behind
 one permission. Linux has three, each with different reach:
 
 ===========  ==================  ===================================

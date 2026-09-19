@@ -66,7 +66,7 @@ from .services.providers.base import TranscriptionProviderError
 from .services.text_pipeline import PipelineContext, TextPipeline
 from .services.vocabulary_store import VocabularyStore
 
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.6.1"
 APP_ID = "dev.fluentry.Fluentry"
 
 DEFAULT_DICTATION_PROMPT = (
@@ -746,7 +746,7 @@ Type=Application
 Name=Fluentry
 Comment=Voice-to-text dictation
 Exec={command} --background
-Icon=audio-input-microphone
+Icon=dev.fluentry.Fluentry
 Terminal=false
 X-GNOME-Autostart-enabled=true
 """
@@ -785,7 +785,7 @@ def autostart_path() -> Path:
 
 
 def write_autostart_entry(enabled: bool) -> None:
-    """The Linux equivalent of a macOS login item."""
+    """Where the desktop looks for programs to start at login."""
     path = autostart_path()
     if not enabled:
         path.unlink(missing_ok=True)
