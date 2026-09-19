@@ -1,0 +1,40 @@
+Package: fluentry
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Fluentry <https://github.com/Fluentry/Fluentry>
+Homepage: https://fluentry.github.io
+Depends: python3 (>= 3.11),
+         python3-gi,
+         python3-numpy,
+         python3-requests,
+         python3-pyside6.qtwidgets,
+         python3-pyside6.qtgui,
+         python3-pyside6.qtcore,
+         python3-evdev,
+         python3-sounddevice,
+         python3-onnxruntime,
+         python3-huggingface-hub,
+         libei1,
+         liboeffis1,
+         wl-clipboard
+Recommends: ydotool,
+            libsecret-tools,
+            playerctl
+Suggests: xdotool,
+          wtype
+Description: Voice-to-text dictation that types into any application
+ Hold a key, talk, and the words are typed into whatever application you
+ are using. Speech recognition runs on this machine, so it works offline
+ and nothing is sent anywhere unless AI cleanup is deliberately turned on
+ and pointed at a provider.
+ .
+ Typing into other applications on Wayland goes through libei and the
+ RemoteDesktop portal, which asks permission once and remembers it.
+ python3-gi is a hard dependency for that reason: without it the grant
+ cannot be stored and the permission dialog returns on every launch.
+ .
+ The default speech model, Parakeet TDT v3, runs on onnxruntime and is
+ downloaded on first use. The Whisper engines need ctranslate2, which
+ Debian does not package; install faster-whisper with pip to use them.

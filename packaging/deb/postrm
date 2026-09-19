@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+    fi
+    # Models, history and settings live under the user's XDG directories
+    # and are deliberately left alone: removing the program must not throw
+    # away what somebody dictated.
+fi
+
+exit 0
