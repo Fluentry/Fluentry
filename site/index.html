@@ -44,8 +44,8 @@
 
 <section class="hero">
   <div class="wrap">
-    <a class="eyebrow" href="https://github.com/Fluentry/Fluentry/releases/tag/v1.6.1">
-      <span class="dot"></span> Version 1.6.1 is out
+    <a class="eyebrow" href="https://github.com/Fluentry/Fluentry/releases/tag/v1.7.0">
+      <span class="dot"></span> Version 1.7.0 is out
     </a>
 
     <h1>Say it once.<br>Fluentry <span class="accent">types it.</span></h1>
@@ -275,7 +275,7 @@
     </div>
 
     <div class="code reveal">
-      <button class="copy" type="button" data-copy="pip install 'fluentry[gui,audio,input,whisper,parakeet]'&#10;fluentry --check&#10;fluentry">Copy</button>
+      <button class="copy" type="button" data-copy="pip install 'fluentry[gui,audio,input,whisper,parakeet,libei]'&#10;fluentry --check&#10;fluentry">Copy</button>
 <pre><span class="p">$</span> pip install <span class="c">'fluentry[gui,audio,input,whisper,parakeet]'</span>
 <span class="p">$</span> fluentry --check   <span class="c"># what this machine supports</span>
 <span class="p">$</span> fluentry</pre>
@@ -288,6 +288,7 @@
       <div class="extra"><code>whisper</code><span>the Whisper engines</span></div>
       <div class="extra"><code>parakeet</code><span>the Parakeet engines</span></div>
       <div class="extra"><code>onnx</code><span>Nemotron and Cohere</span></div>
+      <div class="extra"><code>libei</code><span>typing on Wayland</span></div>
     </div>
   </div>
 </section>
@@ -317,7 +318,7 @@
     <div class="sec-head reveal">
       <span class="kicker">Compatibility</span>
       <h2>Wayland, honestly.</h2>
-      <p>Wayland keeps three things from every application, Fluentry included. Here is what each one costs and how to get it back — and <code>fluentry --check</code> tells you which apply to your session before you hit them.</p>
+      <p>Wayland withholds things from every application, Fluentry included. Typing into other apps is solved — through the input path the compositor sanctions, which asks your permission once. Here is what is left, and <code>fluentry --check</code> tells you which applies to your session before you hit it.</p>
     </div>
     <div class="table-wrap reveal">
       <table>
@@ -326,8 +327,8 @@
           <tr>
             <td>Typing into other apps</td>
             <td><span class="status ok">Works</span></td>
-            <td><span class="status part">XWayland only</span></td>
-            <td>Install <code>ydotool</code> or <code>wtype</code>, or use <em>Copy to Clipboard Only</em></td>
+            <td><span class="status ok">Works</span></td>
+            <td>Through libei and the RemoteDesktop portal, which asks once and remembers. Needs <code>python-libei</code> and your distribution’s <code>libei</code> and <code>python3-gi</code></td>
           </tr>
           <tr>
             <td>Global hotkeys</td>
@@ -339,7 +340,7 @@
             <td>Per-app prompts</td>
             <td><span class="status ok">Works</span></td>
             <td><span class="status part">Some compositors</span></td>
-            <td>Hyprland, Sway and KWin expose the focused window; most do not</td>
+            <td>Hyprland, Sway and KWin expose the focused window. GNOME has the interface but allows only portals to call it</td>
           </tr>
         </tbody>
       </table>
@@ -383,7 +384,7 @@
     <h2>Stop typing what you could just say.</h2>
     <div class="actions">
       <a class="btn btn-primary" href="#install">Install Fluentry</a>
-      <a class="btn" href="https://github.com/Fluentry/Fluentry/releases/tag/v1.6.1">Release notes</a>
+      <a class="btn" href="https://github.com/Fluentry/Fluentry/releases/tag/v1.7.0">Release notes</a>
     </div>
   </div>
 </section>

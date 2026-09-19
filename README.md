@@ -19,7 +19,7 @@ Service for credentials, MPRIS for media, and Adwaita for the look.
 ```bash
 git clone https://github.com/Fluentry/Fluentry.git
 cd Fluentry
-pip install -e '.[gui,audio,input,whisper,parakeet]'
+pip install -e '.[gui,audio,input,whisper,parakeet,libei]'
 fluentry --check      # what this machine supports
 fluentry              # run it
 ```
@@ -41,6 +41,7 @@ The core installs without any of these; each one unlocks a part of the app.
 | `whisper`  | faster-whisper          | the Whisper engines                    |
 | `parakeet` | onnx-asr, onnxruntime   | the Parakeet engines                   |
 | `onnx`     | sherpa-onnx             | the Nemotron and Cohere engines        |
+| `libei`    | python-libei            | typing into apps on Wayland            |
 
 ## Using it
 
