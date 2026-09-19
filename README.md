@@ -16,6 +16,20 @@ Service for credentials, MPRIS for media, and Adwaita for the look.
 
 ## Quick start
 
+On Debian and Ubuntu, install the package from the
+[latest release](https://github.com/Fluentry/Fluentry/releases/latest):
+
+```bash
+sudo apt install ./fluentry_1.7.0_all.deb
+fluentry
+```
+
+That pulls in everything the app needs, including `python3-gi` — without
+which the permission to type into other apps cannot be remembered and is
+asked for again on every launch.
+
+Anywhere else, or to work on it:
+
 ```bash
 git clone https://github.com/Fluentry/Fluentry.git
 cd Fluentry
@@ -24,10 +38,16 @@ fluentry --check      # what this machine supports
 fluentry              # run it
 ```
 
+A pip install into a virtualenv cannot see the system `python3-gi`, so
+either create the environment with `--system-site-packages` or expect the
+permission dialog on every launch.
+
 On first launch a setup flow walks you through picking a language, choosing
 and downloading a speech engine, and trying a dictation.
 
-Requires Python 3.11 or newer.
+Requires Python 3.11 or newer. The package covers the Parakeet engines;
+the Whisper ones need `ctranslate2`, which Debian does not package, so
+`pip install faster-whisper` if you want them.
 
 ### Optional extras
 

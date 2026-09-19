@@ -271,15 +271,16 @@
     <div class="sec-head reveal">
       <span class="kicker">Install</span>
       <h2>Installed and dictating in a minute.</h2>
-      <p>Python 3.11 or newer. The first launch walks you through picking a language, downloading an engine and trying a dictation.</p>
+      <p>On Debian and Ubuntu the package brings everything with it, including the piece that lets Wayland remember your permission. The first launch walks you through picking a language, downloading an engine and trying a dictation.</p>
     </div>
 
     <div class="code reveal">
-      <button class="copy" type="button" data-copy="pip install 'fluentry[gui,audio,input,whisper,parakeet,libei]'&#10;fluentry --check&#10;fluentry">Copy</button>
-<pre><span class="p">$</span> pip install <span class="c">'fluentry[gui,audio,input,whisper,parakeet]'</span>
-<span class="p">$</span> fluentry --check   <span class="c"># what this machine supports</span>
+      <button class="copy" type="button" data-copy="sudo apt install ./fluentry_1.7.0_all.deb&#10;fluentry">Copy</button>
+<pre><span class="p">$</span> sudo apt install ./fluentry_1.7.0_all.deb
 <span class="p">$</span> fluentry</pre>
     </div>
+
+    <p class="sec-note reveal">Not on Debian or Ubuntu? <code>pip install 'fluentry[gui,audio,input,whisper,parakeet,libei]'</code> — but a virtualenv cannot see the system <code>python3-gi</code>, so create it with <code>--system-site-packages</code> or the permission dialog returns on every launch.</p>
 
     <div class="extras reveal">
       <div class="extra"><code>gui</code><span>tray, overlay, windows</span></div>
@@ -304,7 +305,7 @@
       <table>
         <thead><tr><th>Engine</th><th>Runtime</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>Whisper Tiny … Large</td><td><code>faster-whisper</code></td><td>99 languages, works out of the box</td></tr>
+          <tr><td>Whisper Tiny … Large</td><td><code>faster-whisper</code></td><td>99 languages; needs <code>pip install faster-whisper</code>, which Debian does not package</td></tr>
           <tr><td>Parakeet TDT v3 / v2</td><td><code>onnx-asr</code></td><td>~640&nbsp;MB int8, multilingual, ~300&nbsp;ms for a short phrase</td></tr>
           <tr><td>Nemotron, Cohere Transcribe</td><td><code>sherpa-onnx</code></td><td>their exports use that runtime’s layout</td></tr>
         </tbody>
