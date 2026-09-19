@@ -126,12 +126,36 @@ class CommandLineClipboard:
             return None
         return result.stdout or None
 
+    @property
+    def _copy_takes_argument(self) -> bool:
+        """`wl-copy` accepts the text as an argument; the X11 tools do not."""
+        return bool(self._copy) and self._copy[0] == "wl-copy"
+
     def write_text(self, text: str) -> bool:
         if self._copy is None:
             return False
+        # These tools fork a process that serves the selection for as long as
+        # the app owns it, and getting that handover right needs three things.
+        # Passing the text as an argument keeps the daemon off a stdin pipe it
+        # would never close - piping it made `run` block past its own timeout,
+        # so the write never returned. `start_new_session` puts the daemon in
+        # its own process group so it outlives this call instead of dying with
+        # it and leaving the clipboard empty. Detached streams keep it off our
+        # stdout, which it would otherwise hold open.
+        command = list(self._copy)
+        payload: bytes | None = text.encode("utf-8")
+        if self._copy_takes_argument:
+            command += ["--", text]
+            payload = None
         try:
             subprocess.run(
-                self._copy, input=text.encode("utf-8"), timeout=3, check=True
+                command,
+                input=payload,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=3,
+                check=True,
+                start_new_session=True,
             )
         except (OSError, subprocess.SubprocessError):
             return False
@@ -156,6 +180,48 @@ class CommandLineClipboard:
         self.write_text("")
 
 
+class _ClipboardBridge:
+    """Runs clipboard work on the GUI thread.
+
+    Qt's clipboard may only be touched from the thread that owns the
+    application. Dictation finishes on a worker thread, and a write from
+    there returns without error while the Wayland selection is never
+    published — the clipboard simply stays empty, and every caller is told
+    it succeeded. Hopping threads is what makes the write real.
+    """
+
+    def __init__(self, application) -> None:
+        from PySide6.QtCore import QObject, Qt, Signal
+
+        class _Bridge(QObject):
+            invoke = Signal(object, object)
+
+            def __init__(self) -> None:
+                super().__init__()
+                # Blocking, so the caller sees the result and the ordering
+                # against the paste chord that follows it is preserved.
+                self.invoke.connect(self._run, Qt.ConnectionType.BlockingQueuedConnection)
+
+            @staticmethod
+            def _run(work, result) -> None:
+                try:
+                    result.append(work())
+                except Exception:
+                    result.append(None)
+
+        self._application = application
+        self._bridge = _Bridge()
+
+    def run(self, work):
+        from PySide6.QtCore import QThread
+
+        if QThread.currentThread() == self._application.thread():
+            return work()
+        result: list = []
+        self._bridge.invoke.emit(work, result)
+        return result[0] if result else None
+
+
 class QtClipboard:
     """Qt's clipboard, which keeps every MIME type on X11 and Wayland alike."""
 
@@ -168,6 +234,7 @@ class QtClipboard:
         self._clipboard = self._application.clipboard()
         self._change_count = 0
         self._clipboard.dataChanged.connect(self._bump)
+        self._bridge = _ClipboardBridge(self._application)
 
     def _bump(self) -> None:
         self._change_count += 1
@@ -177,38 +244,56 @@ class QtClipboard:
         return self._change_count
 
     def read_text(self) -> str | None:
-        return self._clipboard.text() or None
+        return self._bridge.run(lambda: self._clipboard.text() or None)
 
     def write_text(self, text: str) -> bool:
-        self._clipboard.setText(text)
-        return True
+        return self.write_all([{TEXT_MIME: text.encode("utf-8")}])
 
     def read_all(self) -> list[dict[str, bytes]]:
-        mime_data = self._clipboard.mimeData()
-        if mime_data is None:
-            return []
-        item: dict[str, bytes] = {}
-        for fmt in mime_data.formats():
-            item[fmt] = bytes(mime_data.data(fmt))
-        return [item] if item else []
+        def work() -> list[dict[str, bytes]]:
+            mime_data = self._clipboard.mimeData()
+            if mime_data is None:
+                return []
+            item: dict[str, bytes] = {}
+            for fmt in mime_data.formats():
+                item[fmt] = bytes(mime_data.data(fmt))
+            return [item] if item else []
+
+        return self._bridge.run(work) or []
 
     def write_all(self, items: list[dict[str, bytes]]) -> bool:
         from PySide6.QtCore import QMimeData
 
-        if not items:
-            self._clipboard.clear()
+        def work() -> bool:
+            if not items:
+                self._clipboard.clear()
+                return True
+            mime_data = QMimeData()
+            for fmt, payload in items[0].items():
+                mime_data.setData(fmt, payload)
+            self._clipboard.setMimeData(mime_data)
             return True
-        mime_data = QMimeData()
-        for fmt, payload in items[0].items():
-            mime_data.setData(fmt, payload)
-        self._clipboard.setMimeData(mime_data)
-        return True
+
+        return bool(self._bridge.run(work))
 
     def clear(self) -> None:
-        self._clipboard.clear()
+        self._bridge.run(self._clipboard.clear)
 
 
 def make_clipboard() -> Clipboard:
+    """Qt's clipboard everywhere it works; a helper process on Wayland.
+
+    Wayland only lets a client take the selection with an input serial from a
+    focused surface, and this app is never the focused window when it has
+    something to paste — the tray is its home and the overlay refuses focus
+    on purpose. Qt therefore caches the write locally, reports success, and
+    publishes nothing. `wl-copy` forks a process whose whole job is to hold
+    the selection, which is the only thing that works from the background.
+    """
+    from .system_capabilities import SESSION_WAYLAND, session_type
+
+    if session_type() == SESSION_WAYLAND and CommandLineClipboard.is_available():
+        return CommandLineClipboard()
     try:
         return QtClipboard()
     except Exception:
@@ -249,6 +334,9 @@ class PreservedClipboardSnapshot:
         if clipboard.change_count != if_unchanged_since:
             return False
         if not self.items:
-            clipboard.clear()
-            return True
+            # Nothing was there to put back. Clearing would only destroy the
+            # transcript we just wrote - and that copy is the user's fallback
+            # when the paste chord does not reach the focused window. An
+            # empty clipboard is not worth losing their words for.
+            return False
         return clipboard.write_all(self.items)

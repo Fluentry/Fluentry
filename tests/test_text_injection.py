@@ -83,13 +83,21 @@ def test_a_newer_user_copy_is_never_overwritten():
     assert clipboard.read_text() == "new user copy"
 
 
-def test_an_originally_empty_clipboard_ends_empty():
+def test_an_originally_empty_clipboard_keeps_the_borrowed_text():
+    """Nothing to put back means nothing to do — not "wipe it".
+
+    Clearing here used to be the tidier answer: the clipboard was empty
+    before, so leave it empty. But the app cannot tell whether the paste
+    chord actually reached the focused window, and when it did not, that
+    borrowed text is the only copy of what the user said. Leaving a
+    transcript on an empty clipboard is a much smaller cost than losing it.
+    """
     clipboard = InMemoryClipboard()
     empty = PreservedClipboardSnapshot.capture(clipboard)
     clipboard.write_text("temporary")
 
-    assert empty.restore(clipboard, if_unchanged_since=clipboard.change_count)
-    assert clipboard.read_text() is None
+    assert not empty.restore(clipboard, if_unchanged_since=clipboard.change_count)
+    assert clipboard.read_text() == "temporary"
 
 
 def test_clipboard_service_skips_empty_text():
