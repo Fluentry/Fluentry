@@ -174,6 +174,7 @@ class ASRService:
         self.focus_return_seconds = focus_return_seconds
 
         self.last_capture_error: str | None = None
+        self._last_samples: list[float] = []
         self.buffer = ThreadSafeAudioBuffer()
         self.is_running = False
         self.final_text = ""
@@ -262,6 +263,7 @@ class ASRService:
             count / 16_000,
             peak,
         )
+        self._last_samples = samples
         self._notify("transcribing")
         return self.process_samples(samples)
 
@@ -349,6 +351,10 @@ class ASRService:
                 "the model returned no text for %d chars of raw transcript",
                 len(outcome.raw_text or ""),
             )
+            # Keep the audio that produced nothing. Everything upstream can
+            # be reasoned about from the log, but the one thing that cannot
+            # be reconstructed is what the model actually heard.
+            self._keep_unrecognised_audio()
             self._notify("empty")
             return outcome
 
@@ -381,6 +387,30 @@ class ASRService:
         if should_send:
             key = self.settings.spoken_send_key
             self.typing_service.send_key("Return", key.modifier_flags)
+
+    def _keep_unrecognised_audio(self) -> None:
+        """Write the last recording to disk so it can be listened to."""
+        import wave
+
+        samples = self._last_samples
+        if not samples:
+            return
+        try:
+            from ..persistence.defaults import state_home
+
+            path = state_home() / "unrecognised.wav"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            import numpy as np
+
+            audio = np.clip(np.asarray(samples, dtype=np.float32), -1.0, 1.0)
+            with wave.open(str(path), "wb") as handle:
+                handle.setnchannels(1)
+                handle.setsampwidth(2)
+                handle.setframerate(16_000)
+                handle.writeframes((audio * 32767).astype(np.int16).tobytes())
+            _log.info("wrote the unrecognised audio to %s", path)
+        except Exception as error:
+            _log.warning("could not keep the unrecognised audio: %s", error)
 
     def _record_history(
         self, outcome: DictationOutcome, context: PipelineContext
