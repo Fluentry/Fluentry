@@ -11,7 +11,7 @@ nothing recomputes while it is hidden — the same rule the
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Callable
 
 from PySide6.QtCore import Qt, Signal
@@ -540,8 +540,12 @@ class StatsPage(Page):
 
     def refresh(self) -> None:
         settings = self._app.settings
+        # Local time, not UTC: `build` takes its zone from `now`, and days,
+        # streaks and the busiest hour have to be the user's own — a dictation
+        # at 01:00 belongs to the day they were awake for, not the day UTC
+        # happened to be on.
         snapshot = StatsSnapshot.build(
-            self._app.history.entries, now=datetime.now(timezone.utc)
+            self._app.history.entries, now=datetime.now().astimezone()
         ).using_weekdays(settings.weekends_dont_break_streak)
 
         self.words_tile.set_value(f"{snapshot.total_words:,}")

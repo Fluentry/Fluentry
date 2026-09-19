@@ -310,6 +310,115 @@ h2 {
 .card h3 { margin: 0 0 7px; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.01em; }
 .card p { margin: 0; color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; }
 
+/* --- screenshots -------------------------------------------------------- */
+
+/* The tabs do nothing without scripting, so they stay hidden until app.js
+   claims them and every shot simply stacks instead. */
+.shot-tabs { display: none; }
+.shots.tabbed .shot-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 22px;
+  padding-bottom: 2px;
+}
+.shots.tabbed .shot-tabs::-webkit-scrollbar { display: none; }
+
+.shot-tab {
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-family: var(--body);
+  font-size: 0.88rem;
+  font-weight: 550;
+  padding: 9px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.shot-tab:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+/* A tab strip needs an unmistakable current item, so this one is filled
+   rather than tinted — the same treatment the primary button gets. */
+.shot-tab[aria-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 650;
+}
+.shot-tab[aria-selected="true"]:hover { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-ink); }
+
+.shot { margin: 0; }
+.shot + .shot { margin-top: 40px; }
+.shots.tabbed .shot + .shot { margin-top: 0; }
+
+.shot-frame {
+  background: var(--surface-hi);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.6);
+}
+/* The same chrome as the hero's demo, so the two read as one family. */
+.shot-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.shot-bar .pip { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+.shot-bar .label { margin-left: 8px; font-size: 0.8rem; color: var(--text-faint); font-family: var(--mono); }
+
+/* `block` kills the inline descender gap under the image. */
+.shot-scroll img { display: block; width: 100%; height: auto; }
+
+/* A 1120px-wide desktop window shrunk to a phone is unreadable, so below
+   that the shot keeps a legible width and pans instead — the same answer
+   the wide tables get. The chrome above it stays put. */
+@media (max-width: 720px) {
+  .shot-scroll { overflow-x: auto; }
+  .shot-scroll img { width: 680px; max-width: none; }
+}
+
+.shot figcaption {
+  margin-top: 16px;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  max-width: 68ch;
+}
+
+/* --- the overlay, shown on its own -------------------------------------- */
+
+.pill-show {
+  margin-top: 56px;
+  display: grid;
+  gap: 28px;
+  align-items: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 34px 30px;
+}
+@media (min-width: 860px) { .pill-show { grid-template-columns: 1fr 1fr; gap: 40px; } }
+
+.pill-copy h3 { margin: 0; font-family: var(--display); font-size: 1.35rem; letter-spacing: -0.02em; font-weight: 700; }
+.pill-copy p { margin: 12px 0 0; color: var(--text-dim); font-size: 0.97rem; line-height: 1.65; }
+
+.pill-art { display: block; }
+.pill-art img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin-inline: auto;
+  /* It is a translucent pill with no frame of its own; the shadow is what
+     lifts it off the page. */
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.45));
+}
+
 /* --- install ------------------------------------------------------------ */
 
 .code {

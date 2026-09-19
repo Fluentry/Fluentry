@@ -47,6 +47,41 @@
     });
   }
 
+  // The screenshot gallery. Without this the shots are simply a stack, which
+  // is why the tabs are hidden in CSS until the class below is set.
+  var shots = document.getElementById("shots");
+  if (shots) {
+    var tabs = Array.prototype.slice.call(shots.querySelectorAll(".shot-tab"));
+    var panels = tabs.map(function (tab) {
+      return document.getElementById(tab.getAttribute("aria-controls"));
+    });
+
+    if (tabs.length && panels.every(Boolean)) {
+      var select = function (index, moveFocus) {
+        tabs.forEach(function (tab, position) {
+          var current = position === index;
+          tab.setAttribute("aria-selected", current ? "true" : "false");
+          tab.tabIndex = current ? 0 : -1;
+          panels[position].hidden = !current;
+        });
+        if (moveFocus) { tabs[index].focus(); }
+      };
+
+      select(0, false);
+      shots.classList.add("tabbed");
+
+      tabs.forEach(function (tab, index) {
+        tab.addEventListener("click", function () { select(index, false); });
+        tab.addEventListener("keydown", function (event) {
+          var next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }[event.key];
+          if (next === undefined) { return; }
+          event.preventDefault();
+          select((next + tabs.length) % tabs.length, true);
+        });
+      });
+    }
+  }
+
   // Copy the install commands.
   document.querySelectorAll(".copy").forEach(function (button) {
     button.addEventListener("click", function () {
