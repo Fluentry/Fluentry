@@ -67,6 +67,9 @@ class FluentryApplication:
         self.main_window = MainWindow(self.state, self.palette)
         self.settings_window = SettingsWindow(self.state, self.palette, self.main_window)
         self.main_window.on_open_settings = lambda: self._open_settings(SettingsSection.GENERAL)
+        # A fresh install has no engine, and the wizard is the thing that
+        # walks somebody through choosing and downloading one.
+        self.main_window.on_open_setup = self.show_onboarding
         self.onboarding: OnboardingWindow | None = None
 
         self.local_api: LocalAPIServer | None = None

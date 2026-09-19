@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPlainTextEdit,
+    QProgressBar,
     QSpinBox,
     QSplitter,
     QTableWidget,
@@ -81,6 +82,23 @@ class WelcomePage(Page):
             "you were already using.",
         )
 
+        #: Set by the main window; opens the setup wizard.
+        self.on_open_setup = None
+
+        # Shown only when no engine is ready. Without it the Setup card
+        # states the problem and offers nothing to do about it, which on a
+        # fresh install is the first thing somebody sees.
+        self.setup_card = Card(
+            "No speech model yet",
+            "Fluentry cannot transcribe until one is downloaded.",
+        )
+        self.setup_button = primary_button("Set up a speech model", self._open_setup)
+        self.setup_card.add_row(self.setup_button)
+        layout.addWidget(self.setup_card)
+        # Hidden after it has a parent: a widget hidden before being added
+        # is shown again when the window it joins is shown.
+        self.setup_card.setVisible(False)
+
         self.shortcut_card = Card("Dictation shortcut")
         self.shortcut_label = QLabel()
         self.shortcut_card.add(self.shortcut_label)
@@ -113,9 +131,16 @@ class WelcomePage(Page):
             row.set_palette(palette)
         self.refresh()
 
+    def _open_setup(self) -> None:
+        if self.on_open_setup is not None:
+            self.on_open_setup()
+
     def refresh(self) -> None:
         settings = self._app.settings
         self.shortcut_label.setText(settings.primary_dictation_shortcut_display_string)
+        self.setup_card.setVisible(
+            not self._app.model_is_ready(settings.selected_speech_model)
+        )
 
         report = self._app.readiness_report()
         while len(self.status_rows) < len(report):
@@ -142,8 +167,15 @@ class WelcomePage(Page):
 
 
 class VoiceEnginePage(Page):
+    #: Download progress arrives on a worker thread; this carries it across.
+    progress_reported = Signal(str)
+    #: So does the result.
+    download_finished = Signal(str)
+
     def __init__(self, app_state) -> None:
         super().__init__()
+        self.progress_reported.connect(self._show_progress)
+        self.download_finished.connect(self._on_download_finished)
         self._app = app_state
         container, layout = page(
             "Voice Engine", "Choose the speech model that runs on this machine."
@@ -163,6 +195,16 @@ class VoiceEnginePage(Page):
         self.model_card.add_row(self.download_button)
         self.download_status = hint_label("")
         self.model_card.add(self.download_status)
+        # A model is hundreds of megabytes and a runtime can be more. With
+        # only a label, a slow connection is indistinguishable from a hang.
+        self.download_progress = QProgressBar()
+        self.download_progress.setTextVisible(False)
+        self.download_progress.setRange(0, 0)  # indeterminate: no byte counts here
+        self.download_progress.setMaximumHeight(6)
+        self.model_card.add(self.download_progress)
+        # Hidden after it has a parent: Qt shows a parentless widget again
+        # when the window it is later added to is shown.
+        self.download_progress.setVisible(False)
         layout.addWidget(self.model_card)
 
         self.language_card = Card(
@@ -264,15 +306,29 @@ class VoiceEnginePage(Page):
             return
 
         self.download_button.setEnabled(False)
-        self.download_status.setText("Downloading…")
+        self.download_progress.setVisible(True)
+        self._report(
+            f"Downloading {model.display_name} ({model.download_size})… "
+            "this can take several minutes."
+        )
 
-        def finished(error: str | None) -> None:
-            self.download_status.setText(error or "Download complete.")
-            self._update_model_detail()
+        self._app.download_model(
+            model,
+            lambda error: self.download_finished.emit(error or ""),
+            runtime=runtime,
+            on_progress=self._report,
+        )
 
-        self._app.download_model(model, finished, runtime=runtime, on_progress=self._report)
+    def _on_download_finished(self, error: str) -> None:
+        self.download_progress.setVisible(False)
+        self.download_status.setText(error or "Download complete.")
+        self._update_model_detail()
 
     def _report(self, message: str) -> None:
+        """Called from the download thread, so the widget is touched safely."""
+        self.progress_reported.emit(message)
+
+    def _show_progress(self, message: str) -> None:
         self.download_status.setText(message)
 
     def _confirm_runtime(self, runtime) -> bool:

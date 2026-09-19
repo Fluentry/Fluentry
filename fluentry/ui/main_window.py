@@ -48,6 +48,8 @@ class MainWindow(QMainWindow):
         self._app = app_state
         #: Set by the application; the header bar's Settings button.
         self.on_open_settings = None
+        #: Set by the application; the Welcome page's "set up a model" button.
+        self.on_open_setup = None
         self.setWindowTitle("Fluentry")
         self.setWindowIcon(window_icon(palette.accent))
         self.resize(1000, 680)
@@ -104,12 +106,21 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(self.pages[item])
         content_column.addWidget(self.stack, 1)
 
+        self.pages[SidebarItem.WELCOME].on_open_setup = self._open_setup
+
         self.setCentralWidget(central)
         self.sidebar.setCurrentRow(0)
 
     def _open_settings(self) -> None:
         if self.on_open_settings is not None:
             self.on_open_settings()
+
+    def _open_setup(self) -> None:
+        """The wizard if the app offered one, otherwise the engine page."""
+        if self.on_open_setup is not None:
+            self.on_open_setup()
+            return
+        self.show_item(SidebarItem.VOICE_ENGINE)
 
     def show_item(self, item: SidebarItem) -> None:
         if item not in SIDEBAR_ITEMS:

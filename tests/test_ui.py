@@ -163,6 +163,7 @@ def test_accent_buttons_carry_readable_text():
 
 def test_every_window_has_a_header_bar(qt_app, app_state):
     from fluentry.ui.main_window import MainWindow
+    from fluentry.ui.navigation import SidebarItem
     from fluentry.ui.onboarding import OnboardingWindow
     from fluentry.ui.settings_window import SettingsWindow
 
@@ -339,9 +340,22 @@ def test_the_window_paints_the_background_and_children_do_not(qt_app, app_state)
     image = window.grab().toImage()
     assert sample(image, 500, 20) == palette.headerbar
     assert sample(image, 100, 300) == palette.sidebar
-    # Several points inside the first card must all be the card colour.
-    card_points = [(600, 200), (400, 205), (800, 210)]
-    assert {sample(image, x, y) for x, y in card_points} == {palette.surface}
+
+    # Sample inside a card wherever it happens to be, rather than at fixed
+    # coordinates: this is about a label not painting the window grey over
+    # its card, and it should not fail the next time the page gains a row.
+    from fluentry.ui.widgets import Card
+
+    card = next(
+        c for c in window.pages[SidebarItem.WELCOME].findChildren(Card) if c.isVisible()
+    )
+    top_left = card.mapTo(window, card.rect().topLeft())
+    points = [
+        (top_left.x() + 12, top_left.y() + 4),
+        (top_left.x() + card.width() // 2, top_left.y() + 4),
+        (top_left.x() + card.width() - 12, top_left.y() + 4),
+    ]
+    assert {sample(image, x, y) for x, y in points} == {palette.surface}
     qt_app.setStyleSheet("")
 
 
@@ -938,3 +952,66 @@ def test_the_app_does_not_quit_when_the_last_window_closes(qt_app, app_state):
 
     application = FluentryApplication(argv=["fluentry"], app_state=app_state)
     assert application.qt.quitOnLastWindowClosed() is False
+
+
+# --- a fresh install with no model ------------------------------------------
+
+
+def test_the_welcome_page_offers_a_way_out_when_no_model_is_installed(qt_app, app_state, monkeypatch):
+    """The Setup card used to state the problem and offer nothing to do.
+
+    On a fresh install that is the first thing somebody sees: "still needs
+    to be downloaded", and no button anywhere that downloads it.
+    """
+    from fluentry.ui.main_window import MainWindow
+    from fluentry.ui.navigation import SidebarItem
+
+    monkeypatch.setattr(type(app_state), "model_is_ready", lambda self, model: False)
+    window = MainWindow(app_state, palette_for(ThemePreference.LIGHT, AccentColorOption.BLUE))
+    welcome = window.pages[SidebarItem.WELCOME]
+    welcome.refresh()
+    assert welcome.setup_card.isVisibleTo(window)
+
+    opened = []
+    window.on_open_setup = lambda: opened.append(True)
+    welcome.setup_button.click()
+    assert opened == [True], "the button has to actually start the wizard"
+
+
+def test_the_way_out_disappears_once_a_model_is_installed(qt_app, app_state, monkeypatch):
+    from fluentry.ui.main_window import MainWindow
+    from fluentry.ui.navigation import SidebarItem
+
+    monkeypatch.setattr(type(app_state), "model_is_ready", lambda self, model: True)
+    window = MainWindow(app_state, palette_for(ThemePreference.LIGHT, AccentColorOption.BLUE))
+    welcome = window.pages[SidebarItem.WELCOME]
+    welcome.refresh()
+    assert not welcome.setup_card.isVisibleTo(window)
+
+
+def test_a_download_shows_that_something_is_happening(qt_app, app_state, monkeypatch):
+    """A model is hundreds of megabytes; silence reads as a hang."""
+    from fluentry.ui.main_window import MainWindow
+    from fluentry.ui.navigation import SidebarItem
+
+    monkeypatch.setattr(type(app_state), "model_is_ready", lambda self, model: False)
+    started = {}
+
+    def fake_download(self, model, completion, runtime=None, on_progress=None):
+        started["progress"] = on_progress
+        started["completion"] = completion
+
+    monkeypatch.setattr(type(app_state), "download_model", fake_download)
+    window = MainWindow(app_state, palette_for(ThemePreference.LIGHT, AccentColorOption.BLUE))
+    engine = window.pages[SidebarItem.VOICE_ENGINE]
+    engine.refresh()
+
+    assert not engine.download_progress.isVisibleTo(engine)
+    engine._download()
+    assert engine.download_progress.isVisibleTo(engine), "the user is shown it is working"
+    assert engine.download_status.text(), "and told what is being fetched"
+    assert not engine.download_button.isEnabled(), "and cannot start it twice"
+
+    started["completion"]("")
+    qt_app.processEvents()
+    assert not engine.download_progress.isVisibleTo(engine), "and it stops when finished"
