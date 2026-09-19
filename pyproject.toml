@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluentry"
-version = "1.7.0"
+version = "1.8.0"
 description = "Open source voice-to-text dictation app for Linux with on-device AI enhancement"
 requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
