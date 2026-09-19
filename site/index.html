@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fluentry — dictation for Linux</title>
-<meta name="description" content="Hold a key, talk, and the words are typed into whatever app you are using. Speech recognition runs on your own machine — offline, private, and fast.">
+<meta name="description" content="You think faster than you type. Hold a key, say it, and Fluentry types the words into whatever app you are using — with the speech model running on your own machine.">
 <meta property="og:title" content="Fluentry — dictation for Linux">
-<meta property="og:description" content="Hold a key, talk, and the words are typed into whatever app you are using. Speech runs on your own machine.">
+<meta property="og:description" content="You think faster than you type. Hold a key, say it, and Fluentry types the words — with the speech model running on your own machine.">
 <meta property="og:url" content="https://fluentry.github.io">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#e95420">
@@ -49,12 +49,13 @@
       <span class="dot"></span> Version 1.6.0 is out
     </a>
 
-    <h1>Talk anywhere.<br>Fluentry <span class="accent">types for you.</span></h1>
+    <h1>Say it once.<br>Fluentry <span class="accent">types it.</span></h1>
 
     <p class="lead">
-      Hold a key, say what you mean, and the words land in whatever app you
-      were already using. Speech recognition runs on your own machine — so it
-      works offline, and nothing you say has to leave the computer.
+      You think faster than you type. Hold a key, say what you mean, and the
+      words appear in whatever app you are already in — your editor, your
+      browser, your chat window. The speech model runs on your own machine,
+      so it is quick and nothing you say leaves the computer.
     </p>
 
     <div class="actions">
@@ -66,7 +67,7 @@
     </div>
 
     <p class="hero-meta">
-      <span>GPL-3.0</span><span>Python 3.11+</span><span>X11 &amp; Wayland</span><span>938 tests</span>
+      <span>Free and open source</span><span>Python 3.11+</span><span>X11 &amp; Wayland</span>
     </p>
 
     <div class="demo" role="img" aria-label="A dictation being cleaned up: the spoken words 'fix the um parser bug literal comma then ship it' become the typed text 'fix the parser bug, then ship it'.">
@@ -96,45 +97,45 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="kicker">What it does</span>
-      <h2>A dictation app built for Linux, not ported onto it.</h2>
-      <p>Every macOS framework the original relied on was replaced with the interface Linux actually uses.</p>
+      <h2>Built on the parts of Linux you already run.</h2>
+      <p>Your microphone through PipeWire, your shortcuts read straight from the keyboard, your API keys in your keyring — and speech models that never phone home.</p>
     </div>
 
     <div class="grid">
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></div>
-        <h3>Speech, on your machine</h3>
-        <p>Whisper and Parakeet run locally. Parakeet TDT v3 transcribes a short phrase in about 300&nbsp;ms on a CPU, in dozens of languages.</p>
+        <h3>Speech that stays on your machine</h3>
+        <p>Whisper and Parakeet run on your own hardware — no account, no upload, no per-minute bill. A short phrase comes back in about 300&nbsp;ms on a plain CPU, in dozens of languages.</p>
       </article>
 
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-        <h3>Your own vocabulary</h3>
-        <p>A custom dictionary fixes the words a model keeps mishearing — names, jargon, spellings — and an empty replacement deletes a word outright.</p>
+        <h3>Teach it your words</h3>
+        <p>Colleagues’ names, project code names, the jargon your field runs on. Tell Fluentry once what it keeps mishearing and it stops. Leave the replacement blank to cut a word entirely.</p>
       </article>
 
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
-        <h3>Spoken punctuation</h3>
-        <p>Say “literal comma” and get one. Filler words go, formatting rules run, and a closing phrase can press Return for you.</p>
+        <h3>Say the punctuation</h3>
+        <p>“literal comma” becomes a comma. The “um”s and “uh”s disappear on their own, and a closing phrase can press Return, so a whole message goes out without your hands leaving the desk.</p>
       </article>
 
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg></div>
-        <h3>Optional AI cleanup</h3>
-        <p>Pass each transcript through a language model, local via Ollama or LM&nbsp;Studio or a remote provider. Off by default, and switchable per app.</p>
+        <h3>Polish, if you want it</h3>
+        <p>Send a transcript through a language model to tidy the grammar — running locally under Ollama or LM&nbsp;Studio, or wherever you like. Off unless you turn it on, and you can switch it off for the apps where raw text is what you want.</p>
       </article>
 
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
-        <h3>Desktop-native</h3>
-        <p>Follows your colour scheme, accent colour, icon theme and UI font. Tray icon, recording overlay and settings built to GNOME’s Adwaita conventions.</p>
+        <h3>Looks like the rest of your desktop</h3>
+        <p>Picks up your colour scheme, accent colour, icon theme and UI font, so it sits alongside your other windows instead of announcing itself. Tray icon, recording overlay, and settings laid out the Adwaita way.</p>
       </article>
 
       <article class="card reveal">
         <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div>
-        <h3>Scriptable</h3>
-        <p>Transcribe a file from the shell, or switch on a loopback HTTP API so other tools can read history, manage the dictionary and ask for transcripts.</p>
+        <h3>Works from the shell too</h3>
+        <p>Transcribe a recording with one command, or switch on a loopback HTTP API and let your own tools read the history, manage the dictionary and ask for transcripts.</p>
       </article>
     </div>
   </div>
@@ -144,8 +145,8 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="kicker">Install</span>
-      <h2>Three commands and you are dictating.</h2>
-      <p>Python 3.11 or newer. On first launch a short setup picks a language, downloads an engine and lets you try it.</p>
+      <h2>Installed and dictating in a minute.</h2>
+      <p>Python 3.11 or newer. The first launch walks you through picking a language, downloading an engine and trying a dictation.</p>
     </div>
 
     <div class="code reveal">
@@ -171,7 +172,7 @@
     <div class="sec-head reveal">
       <span class="kicker">Engines</span>
       <h2>Pick the model that fits your machine.</h2>
-      <p>Weights download on first use into your cache directory, and uninstalling takes them with it.</p>
+      <p>Models download the first time you use them and live in your cache directory, so uninstalling takes them with it. Switch whenever you like.</p>
     </div>
     <div class="table-wrap reveal">
       <table>
@@ -191,7 +192,7 @@
     <div class="sec-head reveal">
       <span class="kicker">Compatibility</span>
       <h2>Wayland, honestly.</h2>
-      <p>Wayland withholds three things a dictation app would like. Fluentry reports each one instead of failing quietly — <code>fluentry --check</code> tells you which apply to your session.</p>
+      <p>Wayland keeps three things from every application, Fluentry included. Here is what each one costs and how to get it back — and <code>fluentry --check</code> tells you which apply to your session before you hit them.</p>
     </div>
     <div class="table-wrap reveal">
       <table>
@@ -267,7 +268,6 @@
 <footer>
   <div class="wrap">
     <span>Fluentry · GPL-3.0-or-later</span>
-    <span>Derived from <a href="https://github.com/altic-dev/FluidVoice">FluidVoice</a></span>
     <span class="sep"><a href="https://github.com/Fluentry/Fluentry">Source</a></span>
     <span><a href="https://github.com/Fluentry/Fluentry/issues">Issues</a></span>
   </div>

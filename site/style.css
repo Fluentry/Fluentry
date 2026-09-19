@@ -26,8 +26,8 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --display: "Ubuntu", "Ubuntu Sans", system-ui, sans-serif;
-  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", "Ubuntu Mono", ui-monospace, SFMono-Regular, monospace;
+  --body: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Ubuntu Mono", ui-monospace, monospace;
 }
 
 @media (prefers-color-scheme: light) {
