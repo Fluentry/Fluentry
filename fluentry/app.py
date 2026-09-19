@@ -10,6 +10,7 @@ is what the tests do.
 from __future__ import annotations
 
 import json
+import os
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -116,6 +117,10 @@ class AppState:
             backend=make_injection_backend(),
             clipboard=self.clipboard,
             insertion_mode=self.settings.text_insertion_mode,
+            # An escape hatch while the paste path is being diagnosed: with
+            # the restore off, a transcript the paste failed to deliver stays
+            # on the clipboard instead of vanishing a moment later.
+            restore_clipboard_after_paste=not os.environ.get("FLUENTRY_KEEP_CLIPBOARD"),
         )
         self.llm = LLMClient()
 
@@ -131,6 +136,15 @@ class AppState:
             history_store=self.history,
             enhance=self._enhance,
             focus_context=self._focus_context,
+        )
+        # The service is the only thing that knows when transcription has
+        # finished and insertion is about to begin, and the UI needs that
+        # moment to take the overlay down - while it is up it holds the
+        # keyboard focus and the text lands on it instead of the user's
+        # window. Its other states are already published from here, so only
+        # this one is forwarded.
+        self.asr.add_state_observer(
+            lambda state: self._notify_state(state) if state == "inserting" else None
         )
 
         media_transport = make_media_transport()
@@ -619,8 +633,13 @@ class AppState:
         backends = available_backends()
         session = session_type()
         if backends:
-            detail = f"Typing into other apps uses {backends[0]}."
-            if session == SESSION_WAYLAND and backends == ["xdotool"]:
+            # Ask for the backend that would actually be used, rather than the
+            # first one installed: `available_backends` is a fixed list, while
+            # the chooser reorders it on Wayland. Reading [0] here named
+            # xdotool while ydotool was doing the typing.
+            chosen = make_injection_backend(session).name
+            detail = f"Typing into other apps uses {chosen}."
+            if session == SESSION_WAYLAND and chosen == "xdotool":
                 detail += (
                     " On Wayland this only reaches XWayland apps — install ydotool or "
                     "wtype to reach native Wayland apps."

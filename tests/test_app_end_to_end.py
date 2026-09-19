@@ -212,7 +212,10 @@ def test_a_shortcut_press_records_speaks_and_types(app):
 
 def test_the_overlay_is_told_to_appear_and_disappear(app):
     app.dictate()
-    assert app.states == ["recording", "transcribing", "idle"]
+    # "inserting" sits between the two on purpose: the overlay has to be
+    # taken down before the text is inserted, because while it is on screen
+    # it holds the keyboard focus and the insertion lands on it.
+    assert app.states == ["recording", "transcribing", "inserting", "idle"]
 
 
 def test_the_configured_microphone_is_the_one_opened(app):

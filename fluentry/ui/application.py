@@ -60,6 +60,10 @@ class FluentryApplication:
         self.state.add_notice_observer(self.bridge.notice.emit)
 
         self.overlay = RecordingOverlay(self.palette, self.state.settings)
+        # Only a real session has an overlay to take down and a compositor to
+        # hand focus back, so the wait is set here rather than in AppState,
+        # which is deliberately Qt-free and is what the tests drive.
+        self.state.asr.focus_return_seconds = 0.25
         self.main_window = MainWindow(self.state, self.palette)
         self.settings_window = SettingsWindow(self.state, self.palette, self.main_window)
         self.main_window.on_open_settings = lambda: self._open_settings(SettingsSection.GENERAL)
@@ -173,6 +177,15 @@ class FluentryApplication:
             if self.tray is not None:
                 self.tray.set_recording(False)
                 self.tray.set_status("Transcribing…")
+        elif state == "inserting":
+            # Take the overlay down before the text is inserted: while it is
+            # up it holds the keyboard focus, and the insertion would land on
+            # it rather than on the window the user was writing in.
+            self._level_timer.stop()
+            self.overlay.dismiss()
+            if self.tray is not None:
+                self.tray.set_recording(False)
+                self.tray.set_status("Inserting…")
         elif state == "idle":
             self._level_timer.stop()
             self.overlay.dismiss()

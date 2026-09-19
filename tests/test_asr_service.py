@@ -294,7 +294,9 @@ def test_recording_lifecycle_tracks_state(settings):
     outcome = service.stop_recording_and_transcribe()
     assert outcome.raw_text == "captured"
     assert not service.is_running and not capture.started
-    assert states == ["recording", "transcribing", "idle"]
+    # "inserting" is its own state: the overlay has to come down before the
+    # text is inserted, or it holds the focus and the text lands on it.
+    assert states == ["recording", "transcribing", "inserting", "idle"]
 
 
 def test_cancelling_a_recording_discards_the_buffer(settings):

@@ -151,6 +151,7 @@ class ASRService:
         enhance: Callable[[str, PipelineContext], str] | None = None,
         focus_context: Callable[[], PipelineContext] | None = None,
         clock: Callable[[], float] = time.monotonic,
+        focus_return_seconds: float = 0.0,
     ) -> None:
         self.settings = settings
         self.provider = provider
@@ -162,6 +163,11 @@ class ASRService:
         self._enhance = enhance
         self._focus_context = focus_context or (lambda: PipelineContext())
         self._clock = clock
+        #: How long to let the compositor hand focus back after the overlay
+        #: is dismissed. There is no signal to wait on - GNOME does not tell
+        #: an unprivileged app which window is focused - so this is a plain
+        #: pause, kept short enough not to be felt.
+        self.focus_return_seconds = focus_return_seconds
 
         self.buffer = ThreadSafeAudioBuffer()
         self.is_running = False
@@ -312,6 +318,14 @@ class ASRService:
             self._notify("idle")
             return outcome
 
+        # Put the overlay away *before* inserting. While it is on screen it
+        # holds the keyboard focus - WindowDoesNotAcceptFocus does not
+        # survive the trip through Wayland - so an insertion made now lands
+        # on the overlay instead of the window the user was writing in, and
+        # disappears. Dismissing first hands focus back to them.
+        self._notify("inserting")
+        if self.focus_return_seconds > 0:
+            time.sleep(self.focus_return_seconds)
         self._insert(result.final_text, result.should_send)
         outcome.entry = self._record_history(outcome, context)
         self._notify("idle")
