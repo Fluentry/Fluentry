@@ -173,6 +173,7 @@ class ASRService:
         #: pause, kept short enough not to be felt.
         self.focus_return_seconds = focus_return_seconds
 
+        self.last_capture_error: str | None = None
         self.buffer = ThreadSafeAudioBuffer()
         self.is_running = False
         self.final_text = ""
@@ -215,9 +216,11 @@ class ASRService:
         if self.capture_backend is not None:
             try:
                 self.capture_backend.start(device_uid, self._on_pcm)
-            except Exception:
+            except Exception as error:
                 with self._lock:
                     self.is_running = False
+                _log.error("the microphone would not open: %s", error)
+                self.last_capture_error = str(error)
                 self._notify("failed")
                 return False
 
@@ -248,6 +251,17 @@ class ASRService:
             self.capture_backend.stop()
         samples = self.buffer.get_all()
         self.buffer.clear()
+        # How much audio arrived, and how loud. Without this a transcript
+        # that comes back empty is indistinguishable from a microphone that
+        # delivered nothing at all, which are very different problems.
+        count = len(samples)
+        peak = max((abs(value) for value in samples), default=0.0)
+        _log.info(
+            "captured %d samples (%.1fs at 16kHz), peak %.4f",
+            count,
+            count / 16_000,
+            peak,
+        )
         self._notify("transcribing")
         return self.process_samples(samples)
 
@@ -292,6 +306,11 @@ class ASRService:
 
         outcome.raw_text = result.text
         outcome.transcription_duration_milliseconds = result.duration_milliseconds
+        _log.info(
+            "transcribed %d chars in %sms",
+            len(result.text or ""),
+            result.duration_milliseconds,
+        )
         return self.deliver(outcome)
 
     # --- delivery ---------------------------------------------------------
@@ -323,7 +342,14 @@ class ASRService:
         self.final_text = result.final_text
 
         if not result.final_text.strip() and not result.should_send:
-            self._notify("idle")
+            # The model ran and returned nothing. That is not the same as
+            # having nothing to do, and reporting it as idle left every
+            # caller showing an empty page as though no one had spoken.
+            _log.info(
+                "the model returned no text for %d chars of raw transcript",
+                len(outcome.raw_text or ""),
+            )
+            self._notify("empty")
             return outcome
 
         # Put the overlay away *before* inserting. While it is on screen it
