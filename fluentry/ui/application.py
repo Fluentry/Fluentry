@@ -25,6 +25,7 @@ from .navigation import SettingsSection, SidebarItem
 from .onboarding import OnboardingWindow
 from .overlay import OverlayMode, RecordingOverlay, truncated_preview
 from .settings_window import SettingsWindow
+from .single_instance import SingleInstance
 from .theme import apply_system_font, palette_for, stylesheet
 from .tray import TrayActions, TrayController
 
@@ -72,6 +73,7 @@ class FluentryApplication:
         self.main_window.on_open_setup = self.show_onboarding
         self.onboarding: OnboardingWindow | None = None
 
+        self._instance = SingleInstance()
         self.local_api: LocalAPIServer | None = None
         self._background = False
         self._repaint_switches()
@@ -102,6 +104,13 @@ class FluentryApplication:
         self._background = True
 
     def run(self) -> int:
+        # Before anything claims the hotkey or the tray.
+        if not self._instance.claim():
+            return 0
+        self._instance.another_launch.connect(
+            self._open_main_window, Qt.ConnectionType.QueuedConnection
+        )
+
         # Deciding this before anything else keeps a brand-new install
         # deterministic: onboarding shows exactly once.
         is_true_first_open = ensure_first_open_recorded(self.state.settings.defaults)
@@ -133,6 +142,7 @@ class FluentryApplication:
         self.local_api = server
 
     def quit(self) -> None:
+        self._instance.release()
         self.overlay.dismiss()
         self._level_timer.stop()
         if self.local_api is not None:

@@ -48,3 +48,26 @@ def isolated_xdg(tmp_path, monkeypatch):
     SettingsStore.reset_shared(None)
     yield
     SettingsStore.reset_shared(None)
+
+
+@pytest.fixture
+def qt_app():
+    """One QApplication for the whole run; Qt allows only one.
+
+    Shared here because three test modules wanted it and each had grown its
+    own copy.
+    """
+    from PySide6.QtWidgets import QApplication
+
+    application = QApplication.instance() or QApplication(["fluentry-tests"])
+    yield application
+
+
+@pytest.fixture
+def app_state(settings, tmp_path):
+    """A real AppState with nothing started: no hotkeys, no analytics, no audio."""
+    from fluentry.app import AppState
+    from fluentry.persistence.history_store import TranscriptionHistoryStore
+
+    history = TranscriptionHistoryStore(load=False)
+    return AppState(settings=settings, history=history, start_services=False)

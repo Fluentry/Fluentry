@@ -172,7 +172,10 @@ def ui(settings, tmp_path, qt_app) -> UI:
 def test_recording_then_transcribing_then_the_result(ui):
     ui.window._flow.step = Step.PLAYGROUND
     ui.window._show_step()
-    assert ui.result == ""
+    # Not empty before a dictation: the label is where the transcript will
+    # appear, and a blank one left the step looking like a lone button on a
+    # void. It says so until there is something to say.
+    assert ui.result == "Your words will appear here."
     assert ui.button == "Start Recording"
 
     ui.window.playground_button.click()

@@ -413,6 +413,7 @@ def stylesheet(palette: Palette) -> str:
     QCheckBox::indicator:disabled {{ background-color: {palette.separator}; }}
 
     QRadioButton {{ spacing: 10px; }}
+    QRadioButton {{ spacing: 8px; }}
     QRadioButton::indicator {{
         width: 18px;
         height: 18px;
@@ -422,7 +423,7 @@ def stylesheet(palette: Palette) -> str:
     }}
     QRadioButton::indicator:checked {{
         background-color: {palette.accent};
-        border: 5px solid {palette.accent};
+        border: 1px solid {palette.accent};
     }}
 
     QGroupBox {{

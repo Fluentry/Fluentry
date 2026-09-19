@@ -53,16 +53,6 @@ def qt_app():
     yield application
 
 
-@pytest.fixture
-def app_state(settings, tmp_path):
-    """A real AppState with nothing started: no hotkeys, no analytics, no audio."""
-    from fluentry.app import AppState
-    from fluentry.persistence.history_store import TranscriptionHistoryStore
-
-    history = TranscriptionHistoryStore(load=False)
-    return AppState(settings=settings, history=history, start_services=False)
-
-
 # --- theme ------------------------------------------------------------------
 
 

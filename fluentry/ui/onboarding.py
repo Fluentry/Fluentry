@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
+    QGridLayout,
     QButtonGroup,
     QHBoxLayout,
     QLabel,
@@ -52,6 +53,7 @@ class OnboardingWindow(QWidget):
         self._palette = palette
         self._flow = OnboardingFlow(app_state.settings, analytics=app_state.analytics)
         self._selected_route = None
+        self._routes_connected = False
         self._download_in_progress = False
         self._download_error: str | None = None
         self._download_finished.connect(
@@ -116,6 +118,11 @@ class OnboardingWindow(QWidget):
         self.continue_button = primary_button("Continue", self._continue)
         footer.addWidget(self.back_button)
         footer.addStretch(1)
+        # A greyed-out Continue with nothing next to it leaves the user to
+        # guess what is still wanted — which, on the engine step, is a
+        # download they have no reason to know is required.
+        self.blocked_reason = hint_label("")
+        footer.addWidget(self.blocked_reason)
         footer.addWidget(self.skip_button)
         footer.addWidget(self.continue_button)
         layout.addLayout(footer)
@@ -151,16 +158,21 @@ class OnboardingWindow(QWidget):
         self._language_buttons = QButtonGroup(page)
         self._language_buttons.setExclusive(True)
         current = self._app.settings.onboarding_selected_language_id
-        row: QHBoxLayout | None = None
+        # A grid, not a row of rows: separate QHBoxLayouts size each item to
+        # its own text, so the columns drift apart and a short last row
+        # spreads itself across the width instead of lining up.
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        columns = 4
+        for column in range(columns):
+            grid.setColumnStretch(column, 1)
+        card.add_row_layout(grid)
         for index, language in enumerate(catalog.popular_languages()):
-            if index % 4 == 0:
-                row = QHBoxLayout()
-                card.add_row_layout(row)
             choice = QRadioButton(language.popular_display_name)
             choice.setProperty("languageID", language.id)
             choice.setChecked(language.id == current)
             self._language_buttons.addButton(choice)
-            row.addWidget(choice)
+            grid.addWidget(choice, index // columns, index % columns)
         self._language_buttons.buttonClicked.connect(self._language_chosen)
         layout.addWidget(card)
         self.language_hint = hint_label("")
@@ -181,6 +193,13 @@ class OnboardingWindow(QWidget):
         layout.addWidget(self.model_status)
         self.download_button = primary_button("Download", self._download_model)
         layout.addWidget(self.download_button, 0, Qt.AlignmentFlag.AlignLeft)
+        # Hundreds of megabytes with no sign of movement reads as a freeze.
+        self.download_progress = QProgressBar()
+        self.download_progress.setTextVisible(False)
+        self.download_progress.setRange(0, 0)
+        self.download_progress.setMaximumHeight(6)
+        layout.addWidget(self.download_progress)
+        self.download_progress.setVisible(False)
         layout.addStretch(1)
         return page
 
@@ -201,18 +220,29 @@ class OnboardingWindow(QWidget):
     def _build_playground(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
+        # The step used to be a button and a sentence loose on the page,
+        # with the transcript appearing somewhere below it. Everything the
+        # step is about now sits in one card, and the place the words will
+        # land is visible before they land, so the screen does not change
+        # shape underneath the person reading it.
+        card = Card("Try a dictation", "Nothing here is saved or sent anywhere.")
         self.playground_hint = hint_label("")
-        layout.addWidget(self.playground_hint)
+        card.add(self.playground_hint)
 
         # A global hotkey is not available on every Linux desktop, so setup
         # must not depend on one. This button does the same thing.
         self.playground_button = primary_button("Start Recording", self._toggle_playground)
-        layout.addWidget(self.playground_button, 0, Qt.AlignmentFlag.AlignLeft)
+        card.add_row(self.playground_button)
 
-        self.playground_result = QLabel("")
+        self.playground_result = QLabel("Your words will appear here.")
         self.playground_result.setWordWrap(True)
         self.playground_result.setObjectName("SectionTitle")
-        layout.addWidget(self.playground_result)
+        self.playground_result.setMinimumHeight(64)
+        self.playground_result.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+        )
+        card.add(self.playground_result)
+        layout.addWidget(card)
         layout.addStretch(1)
         return page
 
@@ -270,6 +300,25 @@ class OnboardingWindow(QWidget):
         self._flow.record_step_viewed()
         self._refresh_footer()
 
+    def _blocked_reason(self, step, readiness) -> str:
+        """Why Continue is unavailable, in the words of what to do next."""
+        if step is Step.VOICE_MODEL:
+            if readiness.model_preparation_in_progress:
+                return "Downloading…"
+            if not readiness.has_language_routes:
+                return "No engine supports this language yet."
+            if not engine_is_installable(self._app.settings.selected_speech_model):
+                return "This engine's runtime is not installed."
+            return "Download the engine first."
+        if step is Step.PERMISSIONS:
+            if not readiness.microphone_ready:
+                return "No microphone was found."
+            if not readiness.typing_ready:
+                return "No way to type into other apps yet."
+        if step is Step.PLAYGROUND and not readiness.playground_ready:
+            return "Try a dictation, or skip."
+        return ""
+
     def _readiness(self) -> Readiness:
         settings = self._app.settings
         microphone_ready = bool(self._app.devices.list_input_devices())
@@ -293,7 +342,9 @@ class OnboardingWindow(QWidget):
         readiness = self._readiness()
         self.back_button.setEnabled(step is not Step.LANDING)
         self.continue_button.setText(step.primary_button_title)
-        self.continue_button.setEnabled(self._flow.can_continue(readiness))
+        can_continue = self._flow.can_continue(readiness)
+        self.continue_button.setEnabled(can_continue)
+        self.blocked_reason.setText("" if can_continue else self._blocked_reason(step, readiness))
         self.skip_button.setVisible(step in (Step.PLAYGROUND, Step.AI_ENHANCEMENT))
         self.skip_button.setEnabled(self._flow.can_skip(readiness))
         if step is Step.PLAYGROUND:
@@ -349,10 +400,27 @@ class OnboardingWindow(QWidget):
 
         settings = self._app.settings
         routes = catalog.routes_for_language_id(settings.onboarding_selected_language_id)
+        # The app's own default is the recommendation; everything else is
+        # ordered behind it, and engines whose runtime is absent go last.
+        # The list used to arrive in catalogue order, which put "runtime not
+        # installed" above the obvious choice and left it third.
+        recommended = SpeechModel.default_model()
+        routes = sorted(
+            routes,
+            key=lambda route: (
+                not engine_is_installable(route.model),
+                route.model is not recommended,
+                not bool(route.badge_text),
+            ),
+        )
         for route in routes:
             label = route.model.display_name
             if route.badge_text:
                 label = f"{label} — {route.badge_text}"
+            if route.model is recommended:
+                # Named from what the app actually defaults to, not from
+                # whichever entry the sort happened to put first.
+                label = f"{label}   ·   Recommended"
             if not engine_is_installable(route.model):
                 # Say so on the option itself rather than after a failed try.
                 label = f"{label} — runtime not installed"
@@ -366,7 +434,11 @@ class OnboardingWindow(QWidget):
         if self._selected_route is None and routes:
             self._selected_route = routes[0]
             self._route_buttons.buttons()[0].setChecked(True)
-        self._route_buttons.buttonClicked.connect(self._route_chosen)
+        if not self._routes_connected:
+            # This method runs every time the step is shown, and connecting
+            # here each time made one click fire the handler repeatedly.
+            self._route_buttons.buttonClicked.connect(self._route_chosen)
+            self._routes_connected = True
         self._refresh_model_status()
 
     def _route_chosen(self, chosen: QPushButton) -> None:
@@ -405,6 +477,7 @@ class OnboardingWindow(QWidget):
         self.download_button.setVisible(
             not ready and not self._download_in_progress and installable
         )
+        self.download_progress.setVisible(self._download_in_progress)
         self._refresh_footer()
 
     def _download_model(self) -> None:
@@ -460,7 +533,9 @@ class OnboardingWindow(QWidget):
             if not self._app.settings.onboarding_playground_validated:
                 self._flow.mark_playground_validated()
         else:
-            self.playground_result.setText("")
+            # Not blank: the label is where the transcript will appear, and
+            # an empty one leaves the step looking like a button on a void.
+            self.playground_result.setText("Your words will appear here.")
 
     def _open_ai_settings(self) -> None:
         from .navigation import SidebarItem
