@@ -188,12 +188,12 @@ def test_libei_availability_never_asks_the_user_for_permission(monkeypatch):
     `--check` calls this to report what the machine supports, which has to
     stay a question rather than becoming a request.
     """
-    import libei.oeffis
+    oeffis = pytest.importorskip("libei.oeffis", reason="python-libei is optional")
 
     def explode(*args, **kwargs):
         raise AssertionError("is_available() must not negotiate a session")
 
-    monkeypatch.setattr(libei.oeffis.Oeffis, "create", explode)
+    monkeypatch.setattr(oeffis.Oeffis, "create", explode)
     assert LibeiBackend.is_available() in (True, False)
 
 

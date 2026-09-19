@@ -16,6 +16,7 @@ Depends: python3 (>= 3.11),
          python3-sounddevice,
          python3-onnxruntime,
          python3-huggingface-hub,
+         python3-venv,
          libei1,
          liboeffis1,
          wl-clipboard
@@ -36,5 +37,7 @@ Description: Voice-to-text dictation that types into any application
  cannot be stored and the permission dialog returns on every launch.
  .
  The default speech model, Parakeet TDT v3, runs on onnxruntime and is
- downloaded on first use. The Whisper engines need ctranslate2, which
- Debian does not package; install faster-whisper with pip to use them.
+ downloaded on first use. The Whisper engines need a runtime Debian does
+ not package: either an existing whisper.cpp binary on the path, or
+ faster-whisper, which the app offers to fetch into its own directory the
+ first time such an engine is chosen.

@@ -45,9 +45,12 @@ permission dialog on every launch.
 On first launch a setup flow walks you through picking a language, choosing
 and downloading a speech engine, and trying a dictation.
 
-Requires Python 3.11 or newer. The package covers the Parakeet engines;
-the Whisper ones need `ctranslate2`, which Debian does not package, so
-`pip install faster-whisper` if you want them.
+Requires Python 3.11 or newer. The package covers the Parakeet engines.
+The Whisper ones need a runtime Debian does not package — either a
+`whisper.cpp` binary you already have, or `faster-whisper`, which the app
+offers to fetch into `~/.local/share/fluentry/runtimes` the first time you
+pick such an engine. Nothing outside that folder is touched, and deleting
+it undoes the install.
 
 ### Optional extras
 

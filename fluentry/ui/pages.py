@@ -215,15 +215,36 @@ class VoiceEnginePage(Page):
         return SpeechModel.from_raw(self.model_combo.currentData(), SpeechModel.default_model())
 
     def _update_model_detail(self) -> None:
+        from ..services.runtime_installer import runtime_for
+
         model = self._selected_model()
         ready = self._app.model_is_ready(model)
         warning = f"  {model.memory_warning}" if model.memory_warning else ""
-        self.model_detail.setText(
-            f"{model.human_readable_name} · {model.language_support} · "
-            f"{'downloaded' if ready else 'not downloaded'}{warning}"
-        )
+        # A missing runtime used to read as "not downloaded", which is the
+        # one thing it is not: no amount of downloading weights will help.
+        # Say what is actually missing, before the engine is chosen rather
+        # than after it fails.
+        runtime = None if ready else runtime_for(model)
+        if runtime is not None:
+            detail = (
+                f"{model.human_readable_name} · {model.language_support} · "
+                f"needs the {runtime.name} runtime (about {runtime.megabytes} MB)"
+            )
+            if runtime.alternative:
+                detail += f", or {runtime.alternative}"
+        else:
+            detail = (
+                f"{model.human_readable_name} · {model.language_support} · "
+                f"{'downloaded' if ready else 'not downloaded'}{warning}"
+            )
+        self.model_detail.setText(detail)
         self.download_button.setEnabled(not ready)
-        self.download_button.setText("Downloaded" if ready else "Download model")
+        if ready:
+            self.download_button.setText("Downloaded")
+        elif runtime is not None:
+            self.download_button.setText(f"Install {runtime.name} and download")
+        else:
+            self.download_button.setText("Download model")
 
     def _model_changed(self) -> None:
         model = self._selected_model()
@@ -235,6 +256,13 @@ class VoiceEnginePage(Page):
         self._app.settings.selected_whisper_language_code = self.language_combo.currentData()
 
     def _download(self) -> None:
+        from ..services.runtime_installer import runtime_for
+
+        model = self._selected_model()
+        runtime = runtime_for(model)
+        if runtime is not None and not self._confirm_runtime(runtime):
+            return
+
         self.download_button.setEnabled(False)
         self.download_status.setText("Downloading…")
 
@@ -242,7 +270,31 @@ class VoiceEnginePage(Page):
             self.download_status.setText(error or "Download complete.")
             self._update_model_detail()
 
-        self._app.download_model(self._selected_model(), finished)
+        self._app.download_model(model, finished, runtime=runtime, on_progress=self._report)
+
+    def _report(self, message: str) -> None:
+        self.download_status.setText(message)
+
+    def _confirm_runtime(self, runtime) -> bool:
+        """Ask before fetching code, which is not the same as fetching weights.
+
+        Model weights are data; a runtime is software that will be executed.
+        That deserves a sentence naming what it is and where it comes from,
+        rather than a progress bar the user never agreed to.
+        """
+        alternative = f"\n\nAlready have {runtime.alternative}? Cancel — it will be used instead." if runtime.alternative else ""
+        answer = QMessageBox.question(
+            self,
+            f"Install {runtime.name}?",
+            f"{self._selected_model().display_name} needs the {runtime.name} "
+            f"runtime, which is not installed.\n\nFluentry can download it from "
+            f"PyPI (about {runtime.megabytes} MB) into its own folder under "
+            f"~/.local/share/fluentry/runtimes. Nothing outside that folder is "
+            f"changed, and deleting it undoes this.{alternative}",
+            QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok,
+            QMessageBox.StandardButton.Ok,
+        )
+        return answer is QMessageBox.StandardButton.Ok
 
     def _move_microphone(self, offset: int) -> None:
         item = self.microphone_list.currentItem()

@@ -176,6 +176,11 @@ class AppState:
     # --- lifecycle --------------------------------------------------------
 
     def start(self) -> None:
+        # Anything installed on a previous run has to be on the path before
+        # a provider is built, or the engine looks missing all over again.
+        from .services.runtime_installer import activate_installed_runtimes
+
+        activate_installed_runtimes()
         self.prune_expired_history()
         self.paste_key.start()
         self.microphones.migrate_microphone_priority_if_needed()
@@ -317,9 +322,30 @@ class AppState:
             return checker
         return bool(getattr(provider, "is_ready", False))
 
-    def download_model(self, model: SpeechModel, completion: Callable[[str | None], None]) -> None:
+    def download_model(
+        self,
+        model: SpeechModel,
+        completion: Callable[[str | None], None],
+        runtime=None,
+        on_progress: Callable[[str], None] | None = None,
+    ) -> None:
+        """Fetch the weights, and first the runtime if the engine needs one.
+
+        The two are deliberately one action: an engine whose runtime is
+        missing cannot be made to work by downloading weights, so asking the
+        user to perform two separate steps only invites them to do the
+        useless one.
+        """
+
         def work() -> None:
             try:
+                if runtime is not None:
+                    from .services.runtime_installer import install
+
+                    failure = install(runtime, on_progress=on_progress)
+                    if failure is not None:
+                        completion(failure)
+                        return
                 provider = make_speech_provider(model)
                 provider.prepare()
                 if model == self.settings.selected_speech_model:

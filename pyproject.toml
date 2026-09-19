@@ -41,9 +41,10 @@ fluentry = ["resources/*.png"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
-addopts = "-m 'not model and not hardware and not display'"
+addopts = "-m 'not model and not hardware and not display and not slow'"
 markers = [
     "model: needs downloaded speech-model weights",
     "hardware: needs real audio hardware",
     "display: needs a running display server",
+    "slow: downloads from the network",
 ]
