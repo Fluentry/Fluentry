@@ -243,13 +243,19 @@ class OnboardingWindow(QWidget):
         # land is visible before they land, so the screen does not change
         # shape underneath the person reading it.
         card = Card("Try a dictation", "Nothing here is saved or sent anywhere.")
-        self.playground_hint = hint_label("")
+        # The instruction is the interface: hold the real shortcut and speak,
+        # exactly as dictation works everywhere else. Clicking a "Start
+        # Recording" button and watching it flip to "Stop" was a second,
+        # made-up way to do the one thing the app is about, and it collided
+        # with the permission prompt. The button stays only as a fallback
+        # for desktops where the global hotkey cannot work.
+        self.playground_hint = QLabel("")
+        self.playground_hint.setWordWrap(True)
+        self.playground_hint.setObjectName("RowTitle")
         card.add(self.playground_hint)
 
-        # A global hotkey is not available on every Linux desktop, so setup
-        # must not depend on one. This button does the same thing.
         self.playground_button = primary_button("Start Recording", self._toggle_playground)
-        card.add_row(self.playground_button)
+        card.add_actions(self.playground_button)
 
         self.playground_result = QLabel("Your words will appear here.")
         self.playground_result.setWordWrap(True)
@@ -571,20 +577,22 @@ class OnboardingWindow(QWidget):
         hotkeys_work = any(
             label == "Global hotkey" and ok for label, ok, _detail in self._app.readiness_report()
         )
-        if hotkeys_work:
-            self.playground_hint.setText(
-                f"Hold {shortcut} and say something, or use the button below. "
-                "The transcript appears once it lands."
-            )
-        else:
-            # Do not tell the user to press a shortcut this desktop cannot see.
-            self.playground_hint.setText(
-                "Press the button below and say something. The transcript appears "
-                f"once it lands. ({shortcut} will work once global hotkeys are available.)"
-            )
-
         recording = self._dictation_phase == "recording" or self._app.asr.is_running
-        self.playground_button.setText("Stop Recording" if recording else "Start Recording")
+        if hotkeys_work:
+            # The hotkey is the whole feature; let the user try it directly.
+            self.playground_hint.setText(
+                f"Hold {shortcut}, say a few words, then release."
+            )
+            self.playground_button.setVisible(False)
+        else:
+            # No global hotkey on this desktop, so offer the button instead
+            # of telling the user to press a shortcut nothing will hear.
+            self.playground_hint.setText(
+                f"Press the button and say a few words. ({shortcut} will work "
+                "once global hotkeys are available.)"
+            )
+            self.playground_button.setVisible(True)
+            self.playground_button.setText("Stop Recording" if recording else "Start Recording")
 
         text = self._app.asr.final_text
         if recording:

@@ -296,3 +296,37 @@ def test_the_wizard_restarts_itself_instead_of_asking(wizard, monkeypatch):
         time.sleep(0.05)
     assert restarted == [True], "the wizard must relaunch the app itself"
     assert "restart" in wizard.model_status.text().lower()
+
+
+def test_the_playground_asks_for_the_hotkey_when_it_works(wizard, monkeypatch):
+    """The button was a second, made-up way to do the one thing dictation is.
+
+    When the global hotkey works, the step asks the user to hold it and
+    speak - the real gesture - and hides the fallback button.
+    """
+    from fluentry.ui.onboarding import Step
+
+    real = wizard._app.readiness_report
+    monkeypatch.setattr(
+        wizard._app, "readiness_report",
+        lambda: [(l, True if l == "Global hotkey" else ok, d) for l, ok, d in real()],
+    )
+    wizard._flow.step = Step.PLAYGROUND
+    wizard._show_step()
+
+    assert not wizard.playground_button.isVisibleTo(wizard), "button hidden when the hotkey works"
+    assert "hold" in wizard.playground_hint.text().lower()
+
+
+def test_the_playground_shows_the_button_when_the_hotkey_cannot_work(wizard, monkeypatch):
+    from fluentry.ui.onboarding import Step
+
+    real = wizard._app.readiness_report
+    monkeypatch.setattr(
+        wizard._app, "readiness_report",
+        lambda: [(l, False if l == "Global hotkey" else ok, d) for l, ok, d in real()],
+    )
+    wizard._flow.step = Step.PLAYGROUND
+    wizard._show_step()
+
+    assert wizard.playground_button.isVisibleTo(wizard), "fallback button shown without a hotkey"

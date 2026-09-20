@@ -169,9 +169,24 @@ def ui(settings, tmp_path, qt_app) -> UI:
 # --- the playground's visible states ----------------------------------------
 
 
+def _force_button_fallback(ui):
+    """Show the playground's fallback button, as when no hotkey works.
+
+    When the global hotkey works the step hides the button and asks the
+    user to hold the shortcut; the button remains only as a fallback, and
+    these tests are what exercise it.
+    """
+    real = ui.state.readiness_report
+    ui.state.readiness_report = lambda: [
+        (label, False if label == "Global hotkey" else ok, detail)
+        for label, ok, detail in real()
+    ]
+    ui.window._show_step()
+
+
 def test_recording_then_transcribing_then_the_result(ui):
     ui.window._flow.step = Step.PLAYGROUND
-    ui.window._show_step()
+    _force_button_fallback(ui)
     # Not empty before a dictation: the label is where the transcript will
     # appear, and a blank one left the step looking like a lone button on a
     # void. It says so until there is something to say.
@@ -228,7 +243,7 @@ def test_a_second_dictation_never_shows_the_first_result(ui):
 def test_the_button_label_flips_immediately_on_click(ui):
     """It must not wait for a worker thread to catch up."""
     ui.window._flow.step = Step.PLAYGROUND
-    ui.window._show_step()
+    _force_button_fallback(ui)
 
     ui.window.playground_button.click()
     assert ui.button == "Stop Recording"  # No pumping: same call stack.

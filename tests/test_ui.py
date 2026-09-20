@@ -764,7 +764,7 @@ def test_the_onboarding_footer_matches_the_step(qt_app, app_state):
     assert window.back_button.isEnabled() is True
 
 
-def test_the_playground_can_be_driven_without_a_global_hotkey(qt_app, app_state):
+def test_the_playground_can_be_driven_without_a_global_hotkey(qt_app, app_state, monkeypatch):
     """Not every Linux desktop can deliver a global hotkey, so setup must
     not depend on one."""
     from fluentry.platform.text_injection import RecordingBackend
@@ -792,10 +792,18 @@ def test_the_playground_can_be_driven_without_a_global_hotkey(qt_app, app_state)
     app_state.capture = app_state.asr.capture_backend = capture
     app_state.typing.backend = RecordingBackend()
 
+    # The whole point of this test: no working hotkey, so the button is
+    # the way to record.
+    real = app_state.readiness_report
+    monkeypatch.setattr(
+        app_state, "readiness_report",
+        lambda: [(l, False if l == "Global hotkey" else ok, d) for l, ok, d in real()],
+    )
     window = OnboardingWindow(app_state, palette_for(ThemePreference.DARK, AccentColorOption.BLUE))
     window._flow.step = Step.PLAYGROUND
     window._show_step()
     assert window.continue_button.isEnabled() is False
+    assert window.playground_button.isVisibleTo(window), "the button is the fallback here"
 
     window.playground_button.click()
     assert app_state.asr.is_running is True
@@ -827,7 +835,7 @@ def test_the_playground_does_not_name_a_shortcut_that_cannot_work(qt_app, app_st
     window = OnboardingWindow(app_state, palette_for(ThemePreference.DARK, AccentColorOption.BLUE))
     window._flow.step = Step.PLAYGROUND
     window._show_step()
-    assert "Press the button below" in window.playground_hint.text()
+    assert "Press the button" in window.playground_hint.text()
 
     monkeypatch.setattr(
         app_state, "readiness_report", lambda: [("Global hotkey", True, "works")]
