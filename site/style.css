@@ -516,3 +516,6 @@ footer .sep { margin-left: auto; }
   max-width: 68ch;
 }
 .sec-note code { font-family: var(--mono); font-size: 0.86em; color: var(--accent); }
+
+/* A quieter sub-line inside a table cell, for a parenthetical. */
+.muted-note { color: var(--text-faint); font-size: 0.82em; }
