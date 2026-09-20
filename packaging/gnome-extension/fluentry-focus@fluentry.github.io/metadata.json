@@ -1,0 +1,8 @@
+{
+  "uuid": "fluentry-focus@fluentry.github.io",
+  "name": "Fluentry Focus",
+  "description": "Tells Fluentry which window is focused, so it can adapt how it types text - notably using the terminal paste shortcut in terminals. Exposes only the focused window's application id and title, over a private session-bus interface, and nothing else.",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "session-modes": ["user"],
+  "url": "https://fluentry.github.io"
+}

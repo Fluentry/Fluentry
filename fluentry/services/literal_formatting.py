@@ -86,6 +86,49 @@ RELAXED_MENTION_LEAD_IN_WORDS = {
 #: Chat apps where a bare "at Sam" nearly always means a mention.
 RELAXED_MENTION_APPS = ("slack", "discord", "teams", "element", "matrix", "mattermost")
 
+#: Terminal emulators, matched against the focused window's class/title.
+#: They take Ctrl+Shift+V for paste, not Ctrl+V (which is quoted-insert and
+#: lands a literal ^V), so text insertion has to know it is typing into one.
+TERMINAL_APPS = (
+    "gnome-terminal",
+    "org.gnome.terminal",
+    "org.gnome.console",
+    "kgx",  # GNOME Console's class
+    "ptyxis",
+    "konsole",
+    "xterm",
+    "uxterm",
+    "rxvt",
+    "urxvt",
+    "alacritty",
+    "kitty",
+    "wezterm",
+    "foot",
+    "footclient",
+    "tilix",
+    "terminator",
+    "xfce4-terminal",
+    "lxterminal",
+    "mate-terminal",
+    "deepin-terminal",
+    "qterminal",
+    "st-256color",
+    "cool-retro-term",
+    "contour",
+    "blackbox",  # "com.raggesilver.BlackBox"
+    "tabby",
+    "hyper",
+    "warp",
+)
+
+
+def is_terminal_app(
+    app_name: str | None = None, bundle_id: str | None = None, window_title: str | None = None
+) -> bool:
+    """Whether the focused window is a terminal emulator."""
+    haystack = _haystack(app_name, bundle_id, window_title)
+    return any(needle in haystack for needle in TERMINAL_APPS)
+
 #: Assistants whose composer autocompletes a slash command on the space key.
 SLASH_COMMAND_AUTOCOMPLETE_APPS = ("codex", "chatgpt", "claude", "cursor", "windsurf")
 

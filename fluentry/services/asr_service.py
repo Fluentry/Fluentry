@@ -366,12 +366,12 @@ class ASRService:
         self._notify("inserting")
         if self.focus_return_seconds > 0:
             time.sleep(self.focus_return_seconds)
-        self._insert(result.final_text, result.should_send)
+        self._insert(result.final_text, result.should_send, context)
         outcome.entry = self._record_history(outcome, context)
         self._notify("idle")
         return outcome
 
-    def _insert(self, text: str, should_send: bool) -> None:
+    def _insert(self, text: str, should_send: bool, context=None) -> None:
         mode = self.settings.text_insertion_mode
         # In clipboard-only mode the copy *is* the delivery, so it happens
         # whether or not the "also copy" preference is on — otherwise the
@@ -382,8 +382,15 @@ class ASRService:
 
         if self.typing_service is None or not mode.inserts_into_the_focused_app:
             return
+        # A terminal takes a different paste shortcut; the focused window,
+        # when the desktop will reveal it, is what tells us which.
+        from .literal_formatting import is_terminal_app
+
+        into_terminal = context is not None and is_terminal_app(
+            context.app_name, context.bundle_id, context.window_title
+        )
         if text:
-            self.typing_service.type_text(text, mode=mode)
+            self.typing_service.type_text(text, mode=mode, into_terminal=into_terminal)
         if should_send:
             key = self.settings.spoken_send_key
             self.typing_service.send_key("Return", key.modifier_flags)

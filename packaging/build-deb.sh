@@ -52,6 +52,14 @@ for size in 16 22 24 32 48 64 128 256; do
     [ -f "$icon" ] && install -Dm644 "$icon" \
         "$STAGE/usr/share/icons/hicolor/${size}x${size}/apps/dev.fluentry.Fluentry.png"
 done
+# The GNOME Shell extension that reveals the focused window, installed
+# system-wide so every user has it available to enable.
+EXT="fluentry-focus@fluentry.github.io"
+EXT_DEST="$STAGE/usr/share/gnome-shell/extensions/$EXT"
+mkdir -p "$EXT_DEST"
+install -Dm644 "$ROOT/packaging/gnome-extension/$EXT/metadata.json" "$EXT_DEST/metadata.json"
+install -Dm644 "$ROOT/packaging/gnome-extension/$EXT/extension.js" "$EXT_DEST/extension.js"
+
 install -Dm644 "$ROOT/LICENSE" "$STAGE/usr/share/doc/fluentry/copyright"
 [ -f "$ROOT/NOTICE" ] && install -Dm644 "$ROOT/NOTICE" "$STAGE/usr/share/doc/fluentry/NOTICE"
 

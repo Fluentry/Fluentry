@@ -396,26 +396,32 @@ class TypingService:
     def __post_init__(self) -> None:
         self._paste_lock = threading.Lock()
 
-    def type_text(self, text: str, mode: TextInsertionMode | None = None) -> bool:
+    def type_text(
+        self, text: str, mode: TextInsertionMode | None = None, into_terminal: bool = False
+    ) -> bool:
         if not text:
             return True
         mode = mode or self.insertion_mode
         _log.info(
-            "inserting %d chars via %s, mode=%s", len(text), self.backend.name, mode.value
+            "inserting %d chars via %s, mode=%s%s",
+            len(text),
+            self.backend.name,
+            mode.value,
+            " (terminal)" if into_terminal else "",
         )
         if mode is TextInsertionMode.RELIABLE_PASTE:
-            return self.insert_via_clipboard(text)
+            return self.insert_via_clipboard(text, into_terminal=into_terminal)
         if self.backend.type_text(text):
             _log.info("typed directly")
             return True
         # Direct typing can fail on a native Wayland client with an X11-only
         # backend; the clipboard path still reaches it.
         _log.warning("direct typing failed, falling back to the clipboard")
-        inserted = self.insert_via_clipboard(text)
+        inserted = self.insert_via_clipboard(text, into_terminal=into_terminal)
         _log.info("clipboard fallback %s", "succeeded" if inserted else "FAILED")
         return inserted
 
-    def insert_via_clipboard(self, text: str) -> bool:
+    def insert_via_clipboard(self, text: str, into_terminal: bool = False) -> bool:
         if not text:
             return True
         with self._paste_lock:
@@ -425,7 +431,7 @@ class TypingService:
             owned_change_count = self.clipboard.change_count
             if self.clipboard_settle_seconds > 0:
                 time.sleep(self.clipboard_settle_seconds)
-            pasted = self.send_paste_chord()
+            pasted = self.send_paste_chord(into_terminal=into_terminal)
             _log.info("paste chord %s", "sent" if pasted else "FAILED")
             if not self.restore_clipboard_after_paste:
                 _log.info("left the transcript on the clipboard")
@@ -435,9 +441,14 @@ class TypingService:
             snapshot.restore(self.clipboard, if_unchanged_since=owned_change_count)
             return pasted
 
-    def send_paste_chord(self) -> bool:
-        modifier = self.backend.MODIFIER_NAMES[ModifierFlags.CONTROL]
-        return self.backend.send_chord(self.paste_key_name, [modifier])
+    def send_paste_chord(self, into_terminal: bool = False) -> bool:
+        modifiers = [self.backend.MODIFIER_NAMES[ModifierFlags.CONTROL]]
+        if into_terminal:
+            # A terminal reads Ctrl+V as quoted-insert and shows a literal
+            # ^V; Ctrl+Shift+V is its paste. This is why the focused window
+            # has to be known - see the Fluentry Focus GNOME extension.
+            modifiers.append(self.backend.MODIFIER_NAMES[ModifierFlags.SHIFT])
+        return self.backend.send_chord(self.paste_key_name, modifiers)
 
     def send_key(self, key: str, modifiers: ModifierFlags = ModifierFlags.NONE) -> bool:
         names = [

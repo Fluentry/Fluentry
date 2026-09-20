@@ -15,6 +15,7 @@ enhancement rather than a requirement.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -156,9 +157,78 @@ def sway_context() -> WindowContext | None:
     )
 
 
+#: Remembers that the Fluentry Focus service is absent, so a lookup does
+#: not spawn a gdbus process on every single dictation when the extension
+#: is not installed. Short-lived, because the extension can be enabled
+#: within a session (a re-login makes a new process and clears this anyway).
+_GNOME_FOCUS_ABSENT_UNTIL = 0.0
+_GNOME_FOCUS_ABSENCE_SECONDS = 30.0
+
+
+def _on_gnome() -> bool:
+    current = os.environ.get("XDG_CURRENT_DESKTOP", "")
+    return "GNOME" in current.upper()
+
+
+def gnome_context() -> WindowContext | None:
+    """GNOME Shell, via the Fluentry Focus extension.
+
+    GNOME Wayland gives ordinary clients no way to read the focused window
+    (Introspect.GetWindows is allowed only to portals, Eval is disabled),
+    so the app ships a small Shell extension that publishes exactly the
+    focused window's class and title on the session bus. Absent the
+    extension this simply returns None, like any other provider that does
+    not apply - and remembers that briefly, so it is not paying for a
+    gdbus call on every dictation.
+    """
+    global _GNOME_FOCUS_ABSENT_UNTIL
+
+    if not _on_gnome():
+        return None
+    import time
+
+    if time.monotonic() < _GNOME_FOCUS_ABSENT_UNTIL:
+        return None
+    output = _run(
+        [
+            "gdbus",
+            "call",
+            "--session",
+            "--dest",
+            "org.fluentry.Focus",
+            "--object-path",
+            "/org/fluentry/Focus",
+            "--method",
+            "org.fluentry.Focus.GetFocused",
+        ]
+    )
+    if not output:
+        # No service answered: stop asking for a while.
+        _GNOME_FOCUS_ABSENT_UNTIL = time.monotonic() + _GNOME_FOCUS_ABSENCE_SECONDS
+        return None
+    # gdbus prints a tuple literal: ('gnome-terminal-server', 'user@host: ~')
+    values = re.findall(r"'((?:[^'\\]|\\.)*)'", output.strip())
+    if len(values) < 2:
+        return None
+    app_id = values[0].encode().decode("unicode_escape") or None
+    title = values[1].encode().decode("unicode_escape") or None
+    context = WindowContext(
+        app_id=app_id.lower() if app_id else None,
+        app_name=app_id or None,
+        title=title,
+    )
+    return context if context.is_known else None
+
+
 def active_window_context() -> WindowContext:
     """Best available answer, or an empty context when the desktop hides it."""
-    for provider in (hyprland_context, sway_context, kwin_context, xdotool_context):
+    for provider in (
+        hyprland_context,
+        sway_context,
+        kwin_context,
+        gnome_context,
+        xdotool_context,
+    ):
         try:
             context = provider()
         except Exception:
@@ -177,6 +247,7 @@ def active_window_support() -> str:
         ("Hyprland", hyprland_context),
         ("Sway", sway_context),
         ("KWin", kwin_context),
+        ("the Fluentry Focus extension", gnome_context),
         ("X11", xdotool_context),
     ):
         try:
@@ -187,7 +258,8 @@ def active_window_support() -> str:
             return f"Detected through {name}."
     if session_type() == SESSION_WAYLAND:
         return (
-            "This compositor does not expose the focused window, so per-app prompts "
-            "and app-specific formatting are unavailable."
+            "This compositor does not expose the focused window. On GNOME, enable "
+            "the Fluentry Focus extension (then log out and back in) so terminals "
+            "and per-app formatting are recognised."
         )
     return "The focused window could not be determined."
