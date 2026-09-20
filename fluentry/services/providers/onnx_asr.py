@@ -142,6 +142,21 @@ class OnnxAsrProvider:
             quantization=ONNX_ASR_QUANTIZATION,
         )
 
+        # A runtime is only trusted after it transcribes a known recording.
+        # Ubuntu 26.04's python3-onnxruntime loads this model cleanly and
+        # then returns an empty string for everything - no exception, no
+        # log, nothing. Every dictation "worked" and produced no text.
+        from ..runtime_verification import verify
+
+        if not verify(self):
+            self._recognizer = None
+            raise TranscriptionProviderError(
+                "The installed onnxruntime loads the model but transcribes "
+                "nothing - the distribution's build of it is faulty. "
+                "Fluentry can install a working runtime from the Voice "
+                "Engine screen."
+            )
+
     def transcribe(
         self, samples: Sequence[float], language: str | None = None
     ) -> TranscriptionResult:

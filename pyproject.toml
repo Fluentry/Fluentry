@@ -35,8 +35,9 @@ fluentry = "fluentry.__main__:main"
 include = ["fluentry*"]
 
 [tool.setuptools.package-data]
-# The logo and its icon sizes ship with the app.
-fluentry = ["resources/*.png"]
+# The logo and its icon sizes ship with the app, and a short known
+# recording: a speech runtime is only trusted after transcribing it.
+fluentry = ["resources/*.png", "resources/runtime_check.wav"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

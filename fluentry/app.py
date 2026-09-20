@@ -340,11 +340,25 @@ class AppState:
         def work() -> None:
             try:
                 if runtime is not None:
-                    from .services.runtime_installer import install
+                    from .services.runtime_installer import (
+                        already_loaded_from_elsewhere,
+                        install,
+                    )
 
                     failure = install(runtime, on_progress=on_progress)
                     if failure is not None:
                         completion(failure)
+                        return
+                    if already_loaded_from_elsewhere(runtime):
+                        # The build it replaces is already imported in this
+                        # process and a native extension cannot be swapped
+                        # in place. It is installed and will be used on the
+                        # next launch; forcing the provider now would load
+                        # the faulty one again.
+                        completion(
+                            f"{runtime.name} is installed. Restart Fluentry "
+                            "to start using it."
+                        )
                         return
                 provider = make_speech_provider(model)
                 provider.prepare()

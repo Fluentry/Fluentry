@@ -70,11 +70,15 @@ def test_a_runtime_is_installed_when_its_modules_import(monkeypatch):
     ).is_installed()
 
 
-def test_activation_never_shadows_a_distribution_package(monkeypatch, tmp_path):
-    """A runtime is appended to the path, never prepended.
+def test_activation_shadows_the_runtime_it_replaces(monkeypatch, tmp_path):
+    """An installed runtime goes to the FRONT of the path.
 
-    What the distribution ships has to keep precedence over anything
-    fetched at runtime, or a pip build of numpy quietly replaces apt's.
+    The rule used to be the polite opposite - append, so the distribution
+    wins - until Ubuntu shipped an onnxruntime that loads the model and
+    transcribes every recording to an empty string. A runtime is only
+    installed here because the system one is missing or has been caught
+    doing that, and a replacement that loses the import race to the thing
+    it replaces fixes nothing.
     """
     packages = tmp_path / f"lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages"
     packages.mkdir(parents=True)
@@ -82,8 +86,7 @@ def test_activation_never_shadows_a_distribution_package(monkeypatch, tmp_path):
     before = list(sys.path)
     try:
         assert activate_installed_runtimes()
-        assert sys.path[-1] == str(packages)
-        assert sys.path[: len(before)] == before
+        assert sys.path[0] == str(packages)
     finally:
         sys.path[:] = before
 

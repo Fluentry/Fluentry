@@ -48,11 +48,19 @@ class Runtime:
     provides: tuple[str, ...]
     #: A way to satisfy this without downloading anything, where one exists.
     alternative: str | None = None
+    #: Install even when the system claims to satisfy the requirement.
+    #: Ubuntu's onnxruntime 1.23 satisfies ">=1.17" and transcribes nothing,
+    #: so letting pip skip it would download 90 MB and change nothing.
+    force_own_copy: bool = False
 
     def is_installed(self) -> bool:
         import importlib.util
 
         return all(importlib.util.find_spec(module) is not None for module in self.provides)
+
+    def is_privately_installed(self) -> bool:
+        """Whether the app's own copy exists, regardless of the system one."""
+        return self.site_packages is not None
 
     @property
     def directory(self) -> Path:
@@ -89,6 +97,7 @@ ONNX_ASR = Runtime(
     packages=("onnx-asr>=0.12", "onnxruntime>=1.17", "huggingface_hub>=0.24"),
     megabytes=90,
     provides=("onnx_asr", "onnxruntime"),
+    force_own_copy=True,
 )
 
 RUNTIMES = (FASTER_WHISPER, SHERPA_ONNX, ONNX_ASR)
@@ -108,9 +117,18 @@ def runtime_for(model: SpeechModel) -> Runtime | None:
         return FASTER_WHISPER
     if model.backend is SpeechBackend.ONNX:
         from .providers.onnx_asr import OnnxAsrProvider
+        from .runtime_verification import known_verdict
 
         if OnnxAsrProvider.supports(model):
-            return None if OnnxAsrProvider.is_available() else ONNX_ASR
+            if not OnnxAsrProvider.is_available():
+                return ONNX_ASR
+            # Importable is not the same as working: a runtime that has
+            # been caught transcribing the known recording to nothing is
+            # treated exactly like one that is absent, because to the user
+            # they are the same thing.
+            if known_verdict() is False and not ONNX_ASR.is_privately_installed():
+                return ONNX_ASR
+            return None
         return None if SHERPA_ONNX.is_installed() else SHERPA_ONNX
     return None
 
@@ -124,13 +142,18 @@ def activate_installed_runtimes() -> list[str]:
             continue
         path = str(packages)
         if path not in sys.path:
-            # Appended, never prepended: a distribution package must keep
-            # precedence over anything fetched here.
-            sys.path.append(path)
+            # Prepended, deliberately, and this must run at startup before
+            # the runtime it replaces is imported. A native extension cannot
+            # be swapped once loaded - onnxruntime registers its schema in
+            # C++ on first import and a second build collides - so getting
+            # in first is the only thing that works. install() returns a
+            # flag telling the caller a restart is needed for exactly this.
+            sys.path.insert(0, path)
         activated.append(runtime.key)
     if activated:
         _log.info("activated runtimes: %s", ", ".join(activated))
     return activated
+
 
 
 def install(
@@ -171,21 +194,44 @@ def install(
         return f"The environment at {directory} has no pip."
 
     report(f"Downloading {runtime.name} (about {runtime.megabytes} MB)…")
+    command = [str(pip), "install", "--disable-pip-version-check"]
+    if runtime.force_own_copy:
+        command.append("--ignore-installed")
     failed = _run(
-        [str(pip), "install", "--disable-pip-version-check", *runtime.packages],
+        [*command, *runtime.packages],
         timeout=INSTALL_TIMEOUT_SECONDS,
     )
     if failed is not None:
         return f"Could not install {runtime.name}: {failed}"
 
+    # Put it on the path for any *future* process; this one may already
+    # have imported the build it replaces, and a native module cannot be
+    # swapped in place.
     activate_installed_runtimes()
-    if not runtime.is_installed():
+    if runtime.site_packages is None:
         return (
-            f"{runtime.name} installed but cannot be imported. "
-            f"Its files are in {directory}."
+            f"{runtime.name} installed but its files are not where expected, "
+            f"under {directory}."
         )
     report(f"{runtime.name} is ready.")
     return None
+
+
+def already_loaded_from_elsewhere(runtime: Runtime) -> bool:
+    """Whether a build this runtime replaces is already imported here.
+
+    When true a restart is needed for the freshly installed copy to take
+    effect, because a native extension cannot be swapped mid-process.
+    """
+    private = runtime.site_packages
+    private_path = str(private) if private else None
+    for name, module in list(sys.modules.items()):
+        if name.split(".", 1)[0] not in runtime.provides:
+            continue
+        origin = getattr(module, "__file__", None) or ""
+        if origin and (private_path is None or not origin.startswith(private_path)):
+            return True
+    return False
 
 
 def _run(command: list[str], timeout: float) -> str | None:

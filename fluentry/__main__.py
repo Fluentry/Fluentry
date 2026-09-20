@@ -97,6 +97,13 @@ def run_app(background: bool) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Before any speech provider - so a runtime installed to fix a faulty
+    # system one is on the path first. A native extension cannot be swapped
+    # once imported, so this must happen at the very top of the process.
+    from .services.runtime_installer import activate_installed_runtimes
+
+    activate_installed_runtimes()
+
     arguments = build_parser().parse_args(argv)
     if arguments.check:
         return run_check()
