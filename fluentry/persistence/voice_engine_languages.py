@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Sequence
 
+from ..i18n import tr
 from .nemotron_language import NemotronLanguage
 from .settings_types import CohereLanguage
 from .speech_model import SpeechModel
@@ -60,7 +61,7 @@ class VoiceEngineLanguageRoute:
     @property
     def badge_text(self) -> str | None:
         if self.model in (SpeechModel.PARAKEET_TDT, SpeechModel.PARAKEET_TDT_V2):
-            return "Optimized for Fluentry"
+            return tr("Optimized for Fluentry")
         return None
 
 

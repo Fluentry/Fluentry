@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..i18n import tr
 from ..persistence.settings_types import (
     AccentColorOption,
     CustomDictionaryEntry,
@@ -78,8 +79,10 @@ class WelcomePage(Page):
         self.status_rows: list[StatusRow] = []
         container, layout = page(
             "Fluentry",
-            "Press your dictation hotkey anywhere, speak, and the text lands in the app "
-            "you were already using.",
+            tr(
+                "Press your dictation hotkey anywhere, speak, and the text lands "
+                "in the app you were already using."
+            ),
         )
 
         #: Set by the main window; opens the setup wizard.
@@ -89,32 +92,32 @@ class WelcomePage(Page):
         # states the problem and offers nothing to do about it, which on a
         # fresh install is the first thing somebody sees.
         self.setup_card = Card(
-            "No speech model yet",
-            "Fluentry cannot transcribe until one is downloaded.",
+            tr("No speech model yet"),
+            tr("Fluentry cannot transcribe until one is downloaded."),
         )
-        self.setup_button = primary_button("Set up a speech model", self._open_setup)
+        self.setup_button = primary_button(tr("Set up a speech model"), self._open_setup)
         self.setup_card.add_row(self.setup_button)
         layout.addWidget(self.setup_card)
         # Hidden after it has a parent: a widget hidden before being added
         # is shown again when the window it joins is shown.
         self.setup_card.setVisible(False)
 
-        self.shortcut_card = Card("Dictation shortcut")
+        self.shortcut_card = Card(tr("Dictation shortcut"))
         self.shortcut_label = QLabel()
         self.shortcut_card.add(self.shortcut_label)
-        self.shortcut_card.add(hint_label("Change this in Settings → Dictation."))
+        self.shortcut_card.add(hint_label(tr("Change this in Settings → Dictation.")))
         layout.addWidget(self.shortcut_card)
 
-        self.status_card = Card("Setup")
+        self.status_card = Card(tr("Setup"))
         layout.addWidget(self.status_card)
 
-        self.today_card = Card("Today")
+        self.today_card = Card(tr("Today"))
         row = QWidget()
         row_layout = QHBoxLayout(row)
         row_layout.setContentsMargins(0, 0, 0, 0)
-        self.words_tile = MetricTile("0", "Words dictated")
-        self.transcriptions_tile = MetricTile("0", "Dictations")
-        self.saved_tile = MetricTile("< 1m", "Time saved")
+        self.words_tile = MetricTile("0", tr("Words dictated"))
+        self.transcriptions_tile = MetricTile("0", tr("Dictations"))
+        self.saved_tile = MetricTile("< 1m", tr("Time saved"))
         for tile in (self.words_tile, self.transcriptions_tile, self.saved_tile):
             row_layout.addWidget(tile)
         self.today_card.add(row)
@@ -148,7 +151,7 @@ class WelcomePage(Page):
             self.status_card.add(row)
             self.status_rows.append(row)
         for row, (label, ok, detail) in zip(self.status_rows, report):
-            row.set_state(label, ok, detail)
+            row.set_state(tr(label), ok, tr(detail))
             row.setVisible(True)
         for row in self.status_rows[len(report) :]:
             row.setVisible(False)
@@ -178,20 +181,20 @@ class VoiceEnginePage(Page):
         self.download_finished.connect(self._on_download_finished)
         self._app = app_state
         container, layout = page(
-            "Voice Engine", "Choose the speech model that runs on this machine."
+            tr("Voice Engine"), tr("Choose the speech model that runs on this machine.")
         )
 
-        self.model_card = Card("Speech model")
+        self.model_card = Card(tr("Speech model"))
         self.model_combo = QComboBox()
         for model in SpeechModel.available_models():
             self.model_combo.addItem(
                 f"{model.display_name} — {model.download_size}", model.value
             )
         self.model_combo.currentIndexChanged.connect(self._model_changed)
-        self.model_card.add_labelled("Model", self.model_combo)
+        self.model_card.add_labelled(tr("Model"), self.model_combo)
         self.model_detail = hint_label("")
         self.model_card.add(self.model_detail)
-        self.download_button = primary_button("Download model", self._download)
+        self.download_button = primary_button(tr("Download model"), self._download)
         self.download_status = hint_label("")
         # Button at its natural width with the status beside it, rather than
         # a full-width slab. The download is one action, not a banner.
@@ -209,26 +212,26 @@ class VoiceEnginePage(Page):
         layout.addWidget(self.model_card)
 
         self.language_card = Card(
-            "Language", "Automatic detection works well for most people."
+            tr("Language"), tr("Automatic detection works well for most people.")
         )
         self.language_combo = QComboBox()
-        self.language_combo.addItem("Automatic", None)
+        self.language_combo.addItem(tr("Automatic"), None)
         for code, name in LANGUAGES:
-            self.language_combo.addItem(name, code)
+            self.language_combo.addItem(tr(name), code)
         self.language_combo.currentIndexChanged.connect(self._language_changed)
-        self.language_card.add_labelled("Spoken language", self.language_combo)
+        self.language_card.add_labelled(tr("Spoken language"), self.language_combo)
         layout.addWidget(self.language_card)
 
         self.microphone_card = Card(
-            "Microphone", "Fluentry uses the first working microphone in this order."
+            tr("Microphone"), tr("Fluentry uses the first working microphone in this order.")
         )
         self.microphone_list = QListWidget()
         self.microphone_list.setMaximumHeight(160)
         self.microphone_card.add(self.microphone_list)
         self.microphone_card.add_actions(
-            button("Move up", lambda: self._move_microphone(-1)),
-            button("Move down", lambda: self._move_microphone(1)),
-            button("Refresh", self.refresh),
+            button(tr("Move up"), lambda: self._move_microphone(-1)),
+            button(tr("Move down"), lambda: self._move_microphone(1)),
+            button(tr("Refresh"), self.refresh),
         )
         layout.addWidget(self.microphone_card)
 
@@ -269,25 +272,30 @@ class VoiceEnginePage(Page):
         # than after it fails.
         runtime = None if ready else runtime_for(model)
         if runtime is not None:
-            detail = (
-                f"{model.human_readable_name} · {model.language_support} · "
-                f"needs the {runtime.name} runtime (about {runtime.megabytes} MB)"
+            detail = tr(
+                "{name} · {support} · needs the {runtime} runtime (about {mb} MB)"
+            ).format(
+                name=model.human_readable_name,
+                support=model.language_support,
+                runtime=runtime.name,
+                mb=runtime.megabytes,
             )
             if runtime.alternative:
-                detail += f", or {runtime.alternative}"
+                detail += tr(", or {alternative}").format(alternative=runtime.alternative)
         else:
             detail = (
                 f"{model.human_readable_name} · {model.language_support} · "
-                f"{'downloaded' if ready else 'not downloaded'}{warning}"
+                + (tr("downloaded") if ready else tr("not downloaded"))
+                + warning
             )
         self.model_detail.setText(detail)
         self.download_button.setEnabled(not ready)
         if ready:
-            self.download_button.setText("Downloaded")
+            self.download_button.setText(tr("Downloaded"))
         elif runtime is not None:
-            self.download_button.setText(f"Install {runtime.name} and download")
+            self.download_button.setText(tr("Install {runtime} and download").format(runtime=runtime.name))
         else:
-            self.download_button.setText("Download model")
+            self.download_button.setText(tr("Download model"))
 
     def _model_changed(self) -> None:
         model = self._selected_model()
@@ -309,8 +317,9 @@ class VoiceEnginePage(Page):
         self.download_button.setEnabled(False)
         self.download_progress.setVisible(True)
         self._report(
-            f"Downloading {model.display_name} ({model.download_size})… "
-            "this can take several minutes."
+            tr("Downloading {name} ({size})… this can take several minutes.").format(
+                name=model.display_name, size=model.download_size
+            )
         )
 
         self._app.download_model(
@@ -322,7 +331,7 @@ class VoiceEnginePage(Page):
 
     def _on_download_finished(self, error: str) -> None:
         self.download_progress.setVisible(False)
-        self.download_status.setText(error or "Download complete.")
+        self.download_status.setText(error or tr("Download complete."))
         self._update_model_detail()
 
     def _report(self, message: str) -> None:
@@ -339,15 +348,25 @@ class VoiceEnginePage(Page):
         That deserves a sentence naming what it is and where it comes from,
         rather than a progress bar the user never agreed to.
         """
-        alternative = f"\n\nAlready have {runtime.alternative}? Cancel — it will be used instead." if runtime.alternative else ""
+        alternative = (
+            "\n\n" + tr("Already have {alternative}? Cancel — it will be used instead.").format(alternative=runtime.alternative)
+            if runtime.alternative
+            else ""
+        )
         answer = QMessageBox.question(
             self,
-            f"Install {runtime.name}?",
-            f"{self._selected_model().display_name} needs the {runtime.name} "
-            f"runtime, which is not installed.\n\nFluentry can download it from "
-            f"PyPI (about {runtime.megabytes} MB) into its own folder under "
-            f"~/.local/share/fluentry/runtimes. Nothing outside that folder is "
-            f"changed, and deleting it undoes this.{alternative}",
+            tr("Install {runtime}?").format(runtime=runtime.name),
+            tr(
+                "{model} needs the {runtime} runtime, which is not installed.\n\n"
+                "Fluentry can download it from PyPI (about {mb} MB) into its own "
+                "folder under ~/.local/share/fluentry/runtimes. Nothing outside "
+                "that folder is changed, and deleting it undoes this."
+            ).format(
+                model=self._selected_model().display_name,
+                runtime=runtime.name,
+                mb=runtime.megabytes,
+            )
+            + alternative,
             QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok,
             QMessageBox.StandardButton.Ok,
         )
@@ -381,62 +400,64 @@ class AIEnhancementPage(Page):
         super().__init__()
         self._app = app_state
         container, layout = page(
-            "AI Enhancement",
-            "Optionally clean up each dictation with a language model. Everything works "
-            "without this.",
+            tr("AI Enhancement"),
+            tr(
+                "Optionally clean up each dictation with a language model. "
+                "Everything works without this."
+            ),
         )
 
-        self.enable_card = Card("Enhancement")
+        self.enable_card = Card(tr("Enhancement"))
         self.enable_toggle = ToggleRow(
-            "Enhance dictations with AI",
-            "Runs after transcription. If the provider fails, your transcript is typed anyway.",
+            tr("Enhance dictations with AI"),
+            tr("Runs after transcription. If the provider fails, your transcript is typed anyway."),
         )
         self.enable_toggle.toggled.connect(self._set_enabled)
         self.enable_card.add(self.enable_toggle)
         self.stream_toggle = ToggleRow(
-            "Stream the response", "Shows words in the overlay as the model produces them."
+            tr("Stream the response"), tr("Shows words in the overlay as the model produces them.")
         )
         self.stream_toggle.toggled.connect(self._set_streaming)
         self.enable_card.add(self.stream_toggle)
         layout.addWidget(self.enable_card)
 
-        self.provider_card = Card("Provider")
+        self.provider_card = Card(tr("Provider"))
         self.provider_combo = QComboBox()
         for identifier, label, base_url in BUILT_IN_PROVIDERS:
             self.provider_combo.addItem(label, identifier)
         self.provider_combo.currentIndexChanged.connect(self._provider_changed)
-        self.provider_card.add_labelled("Provider", self.provider_combo)
+        self.provider_card.add_labelled(tr("Provider"), self.provider_combo)
 
         self.base_url_field = QLineEdit()
         self.base_url_field.setPlaceholderText("https://api.example.com/v1")
         self.base_url_field.editingFinished.connect(self._base_url_changed)
-        self.provider_card.add_labelled("Base URL", self.base_url_field)
+        self.provider_card.add_labelled(tr("Base URL"), self.base_url_field)
 
         self.key_field = QLineEdit()
         self.key_field.setEchoMode(QLineEdit.EchoMode.Password)
-        self.key_field.setPlaceholderText("Stored in your keyring")
+        self.key_field.setPlaceholderText(tr("Stored in your keyring"))
         self.key_field.editingFinished.connect(self._key_changed)
-        self.provider_card.add_labelled("API key", self.key_field)
+        self.provider_card.add_labelled(tr("API key"), self.key_field)
 
         self.model_field = QLineEdit()
         self.model_field.setPlaceholderText("gpt-4o-mini")
         self.model_field.editingFinished.connect(self._model_changed)
-        self.provider_card.add_labelled("Model", self.model_field)
+        self.provider_card.add_labelled(tr("Model"), self.model_field)
 
         self.key_storage_hint = hint_label("")
         self.provider_card.add(self.key_storage_hint)
         self.verify_status = hint_label("")
         self.provider_card.add_actions(
-            button("Test connection", self._verify), self.verify_status
+            button(tr("Test connection"), self._verify), self.verify_status
         )
         layout.addWidget(self.provider_card)
 
         self.prompt_card = Card(
-            "Prompt", "The instruction sent with every dictation. Leave blank for the default."
+            tr("Prompt"), tr("The instruction sent with every dictation. Leave blank for the default.")
         )
         self.prompt_editor = QPlainTextEdit()
         self.prompt_editor.setPlaceholderText(
-            "Clean up this dictation. Return only the corrected text."
+            tr("Clean up this dictation. Return only the corrected text.")
         )
         self.prompt_editor.setMaximumHeight(140)
         self.prompt_editor.textChanged.connect(self._prompt_changed)
@@ -461,7 +482,7 @@ class AIEnhancementPage(Page):
 
         from ..persistence.keychain import secret_backend_name
 
-        self.key_storage_hint.setText(f"Keys are stored in your {secret_backend_name()}.")
+        self.key_storage_hint.setText(tr("Keys are stored in your {backend}.").format(backend=secret_backend_name()))
         override = settings.default_dictation_prompt_override
         if override is not None and override != self.prompt_editor.toPlainText():
             self.prompt_editor.setPlainText(override)
@@ -507,7 +528,7 @@ class AIEnhancementPage(Page):
         self._app.settings.default_dictation_prompt_override = text or None
 
     def _verify(self) -> None:
-        self.verify_status.setText("Testing…")
+        self.verify_status.setText(tr("Testing…"))
         self.verify_status.setText(self._app.verify_provider())
 
 
@@ -533,13 +554,15 @@ class DictionaryPage(Page):
         super().__init__()
         self._app = app_state
         container, layout = page(
-            "Custom Dictionary",
-            "Fix names and jargon the model mishears. Replacements are applied to every "
-            "dictation, before anything else.",
+            tr("Custom Dictionary"),
+            tr(
+                "Fix names and jargon the model mishears. Replacements are applied "
+                "to every dictation, before anything else."
+            ),
         )
 
         self.table = QTableWidget(0, 2)
-        self.table.setHorizontalHeaderLabels(["Heard as", "Replace with"])
+        self.table.setHorizontalHeaderLabels([tr("Heard as"), tr("Replace with")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -548,17 +571,19 @@ class DictionaryPage(Page):
         controls = QWidget()
         controls_layout = QHBoxLayout(controls)
         controls_layout.setContentsMargins(0, 0, 0, 0)
-        controls_layout.addWidget(primary_button("Add entry", self._add))
-        controls_layout.addWidget(button("Remove selected", self._remove))
-        controls_layout.addWidget(button("Import…", self._import))
-        controls_layout.addWidget(button("Export…", self._export))
+        controls_layout.addWidget(primary_button(tr("Add entry"), self._add))
+        controls_layout.addWidget(button(tr("Remove selected"), self._remove))
+        controls_layout.addWidget(button(tr("Import…"), self._import))
+        controls_layout.addWidget(button(tr("Export…"), self._export))
         controls_layout.addStretch(1)
         layout.addWidget(controls)
 
         layout.addWidget(
             hint_label(
-                'Separate several mishearings with commas: "fluent tree, fluently" → '
-                '"Fluentry".'
+                tr(
+                    'Separate several mishearings with commas: "fluent tree, '
+                    'fluently" → "Fluentry".'
+                )
             )
         )
 
@@ -583,11 +608,11 @@ class DictionaryPage(Page):
 
     def _add(self) -> None:
         triggers, ok = QInputDialog.getText(
-            self, "Add entry", "Heard as (comma separated):"
+            self, tr("Add entry"), tr("Heard as (comma separated):")
         )
         if not ok or not triggers.strip():
             return
-        replacement, ok = QInputDialog.getText(self, "Add entry", "Replace with:")
+        replacement, ok = QInputDialog.getText(self, tr("Add entry"), tr("Replace with:"))
         if not ok:
             return
         self._app.add_dictionary_entry(triggers, replacement)
@@ -603,11 +628,11 @@ class DictionaryPage(Page):
     def _import(self) -> None:
         from PySide6.QtWidgets import QFileDialog
 
-        path, _ = QFileDialog.getOpenFileName(self, "Import dictionary", "", "JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(self, tr("Import dictionary"), "", "JSON (*.json)")
         if not path:
             return
         message = self._app.import_dictionary(path)
-        QMessageBox.information(self, "Import dictionary", message)
+        QMessageBox.information(self, tr("Import dictionary"), message)
         self.refresh()
 
     def _export(self) -> None:
@@ -615,7 +640,7 @@ class DictionaryPage(Page):
 
         suggested = self._app.dictionary_transfer.suggested_filename()
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export dictionary", suggested, "JSON (*.json)"
+            self, tr("Export dictionary"), suggested, "JSON (*.json)"
         )
         if not path:
             return
@@ -629,25 +654,25 @@ class StatsPage(Page):
     def __init__(self, app_state, palette) -> None:
         super().__init__()
         self._app = app_state
-        container, layout = page("Stats", "Everything here is computed locally from your history.")
+        container, layout = page(tr("Stats"), tr("Everything here is computed locally from your history."))
 
         totals = QWidget()
         totals_layout = QHBoxLayout(totals)
         totals_layout.setContentsMargins(0, 0, 0, 0)
-        self.words_tile = MetricTile("0", "Words")
-        self.transcriptions_tile = MetricTile("0", "Dictations")
-        self.saved_tile = MetricTile("< 1m", "Time saved")
-        self.streak_tile = MetricTile("0", "Day streak")
+        self.words_tile = MetricTile("0", tr("Words"))
+        self.transcriptions_tile = MetricTile("0", tr("Dictations"))
+        self.saved_tile = MetricTile("< 1m", tr("Time saved"))
+        self.streak_tile = MetricTile("0", tr("Day streak"))
         for tile in (self.words_tile, self.transcriptions_tile, self.saved_tile, self.streak_tile):
             totals_layout.addWidget(tile)
         layout.addWidget(totals)
 
-        self.chart_card = Card("Last 30 days")
+        self.chart_card = Card(tr("Last 30 days"))
         self.chart = SparklineChart(palette)
         self.chart_card.add(self.chart)
         layout.addWidget(self.chart_card)
 
-        self.details_card = Card("Details")
+        self.details_card = Card(tr("Details"))
         self.details_label = QLabel()
         self.details_label.setTextFormat(Qt.TextFormat.RichText)
         self.details_card.add(self.details_label)
@@ -679,14 +704,22 @@ class StatsPage(Page):
 
         top_apps = ", ".join(snapshot.top_apps_formatted(5)) or "—"
         self.details_label.setText(
-            f"<b>Average words per dictation:</b> {snapshot.average_words_per_transcription}<br>"
-            f"<b>Longest dictation:</b> {snapshot.longest_transcription_words} words<br>"
-            f"<b>Best streak:</b> {snapshot.best_streak} days<br>"
-            f"<b>AI enhanced:</b> {snapshot.ai_enhancement_rate}%<br>"
-            f"<b>Busiest hour:</b> {snapshot.peak_hour_formatted}<br>"
-            f"<b>Top apps:</b> {top_apps}<br>"
-            f"<b>Milestones:</b> {snapshot.total_milestones_achieved} of "
-            f"{snapshot.total_milestones_possible}"
+            f"<b>{tr('Average words per dictation:')}</b> "
+            f"{snapshot.average_words_per_transcription}<br>"
+            f"<b>{tr('Longest dictation:')}</b> "
+            + tr("{count} words").format(count=snapshot.longest_transcription_words)
+            + "<br>"
+            f"<b>{tr('Best streak:')}</b> "
+            + tr("{count} days").format(count=snapshot.best_streak)
+            + "<br>"
+            f"<b>{tr('AI enhanced:')}</b> {snapshot.ai_enhancement_rate}%<br>"
+            f"<b>{tr('Busiest hour:')}</b> {snapshot.peak_hour_formatted}<br>"
+            f"<b>{tr('Top apps:')}</b> {top_apps}<br>"
+            f"<b>{tr('Milestones:')}</b> "
+            + tr("{done} of {total}").format(
+                done=snapshot.total_milestones_achieved,
+                total=snapshot.total_milestones_possible,
+            )
         )
 
 
@@ -697,10 +730,10 @@ class HistoryPage(Page):
     def __init__(self, app_state) -> None:
         super().__init__()
         self._app = app_state
-        container, layout = page("History", "Every dictation, stored only on this machine.")
+        container, layout = page(tr("History"), tr("Every dictation, stored only on this machine."))
 
         self.search_field = QLineEdit()
-        self.search_field.setPlaceholderText("Search history")
+        self.search_field.setPlaceholderText(tr("Search history"))
         self.search_field.textChanged.connect(lambda _text: self.refresh())
         layout.addWidget(self.search_field)
 
@@ -724,8 +757,8 @@ class HistoryPage(Page):
         buttons = QWidget()
         buttons_layout = QHBoxLayout(buttons)
         buttons_layout.setContentsMargins(0, 0, 0, 0)
-        buttons_layout.addWidget(primary_button("Copy", self._copy))
-        buttons_layout.addWidget(button("Delete", self._delete))
+        buttons_layout.addWidget(primary_button(tr("Copy"), self._copy))
+        buttons_layout.addWidget(button(tr("Delete"), self._delete))
         buttons_layout.addStretch(1)
         detail_layout.addWidget(buttons)
         splitter.addWidget(detail)
@@ -736,7 +769,7 @@ class HistoryPage(Page):
         controls_layout = QHBoxLayout(controls)
         controls_layout.setContentsMargins(0, 0, 0, 0)
         controls_layout.addStretch(1)
-        clear_button = button("Clear all history", self._clear)
+        clear_button = button(tr("Clear all history"), self._clear)
         clear_button.setObjectName("Destructive")
         controls_layout.addWidget(clear_button)
         layout.addWidget(controls)
@@ -772,7 +805,8 @@ class HistoryPage(Page):
         if entry is None:
             return
         self.detail_header.setText(
-            f"{entry.app_name or 'Unknown app'} · {entry.window_title or 'no window title'}"
+            f"{entry.app_name or tr('Unknown app')} · "
+            f"{entry.window_title or tr('no window title')}"
         )
         self.detail_text.setPlainText(entry.processed_text)
 
@@ -803,7 +837,7 @@ class HistoryPage(Page):
                 )
             )
         if entry.ai_processing_error:
-            parts.append(f"AI failed: {entry.ai_processing_error}")
+            parts.append(tr("AI failed: {error}").format(error=entry.ai_processing_error))
         self.metrics_label.setText(" · ".join(parts))
 
     def _copy(self) -> None:
@@ -822,8 +856,8 @@ class HistoryPage(Page):
     def _clear(self) -> None:
         confirmation = QMessageBox.question(
             self,
-            "Clear all history",
-            "Delete every stored dictation? This cannot be undone.",
+            tr("Clear all history"),
+            tr("Delete every stored dictation? This cannot be undone."),
             QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Yes,
             QMessageBox.StandardButton.Cancel,
         )

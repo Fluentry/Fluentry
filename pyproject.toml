@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluentry"
-version = "1.0.0"
+version = "1.0.1"
 description = "Open source voice-to-text dictation app for Linux with on-device AI enhancement"
 requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
@@ -36,8 +36,9 @@ include = ["fluentry*"]
 
 [tool.setuptools.package-data]
 # The logo and its icon sizes ship with the app, and a short known
-# recording: a speech runtime is only trusted after transcribing it.
-fluentry = ["resources/*.png", "resources/runtime_check.wav"]
+# recording: a speech runtime is only trusted after transcribing it. The
+# i18n JSON files are the interface's translation catalogues.
+fluentry = ["resources/*.png", "resources/runtime_check.wav", "resources/i18n/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

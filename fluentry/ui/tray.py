@@ -18,6 +18,8 @@ from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
+from ..i18n import tr
+
 ICON_SIZE = 64
 
 
@@ -102,30 +104,30 @@ class TrayController:
         self.tray.setToolTip("Fluentry")
 
         self._menu = QMenu()
-        self._toggle_action = QAction("Start Dictation", self._menu)
+        self._toggle_action = QAction(tr("Start Dictation"), self._menu)
         self._toggle_action.triggered.connect(lambda: actions.toggle_dictation())
         self._menu.addAction(self._toggle_action)
         self._menu.addSeparator()
 
-        open_action = QAction("Open Fluentry", self._menu)
+        open_action = QAction(tr("Open Fluentry"), self._menu)
         open_action.triggered.connect(lambda: actions.open_main_window())
         self._menu.addAction(open_action)
 
-        history_action = QAction("History", self._menu)
+        history_action = QAction(tr("History"), self._menu)
         history_action.triggered.connect(lambda: actions.open_history())
         self._menu.addAction(history_action)
 
-        settings_action = QAction("Settings…", self._menu)
+        settings_action = QAction(tr("Settings…"), self._menu)
         settings_action.triggered.connect(lambda: actions.open_settings())
         self._menu.addAction(settings_action)
 
         self._menu.addSeparator()
-        self._status_action = QAction("Idle", self._menu)
+        self._status_action = QAction(tr("Idle"), self._menu)
         self._status_action.setEnabled(False)
         self._menu.addAction(self._status_action)
 
         self._menu.addSeparator()
-        quit_action = QAction("Quit Fluentry", self._menu)
+        quit_action = QAction(tr("Quit Fluentry"), self._menu)
         quit_action.triggered.connect(lambda: actions.quit())
         self._menu.addAction(quit_action)
 
@@ -150,8 +152,8 @@ class TrayController:
     def set_recording(self, is_recording: bool) -> None:
         self._is_recording = is_recording
         self.tray.setIcon(tray_icon(is_recording, self._palette.accent))
-        self._toggle_action.setText("Stop Dictation" if is_recording else "Start Dictation")
-        self.tray.setToolTip("Fluentry — recording" if is_recording else "Fluentry")
+        self._toggle_action.setText(tr("Stop Dictation") if is_recording else tr("Start Dictation"))
+        self.tray.setToolTip(tr("Fluentry — recording") if is_recording else "Fluentry")
 
     def set_status(self, text: str) -> None:
         self._status_action.setText(text)

@@ -25,6 +25,7 @@ from typing import Sequence
 
 import numpy as np
 
+from ...i18n import tr
 from ...persistence.defaults import cache_home
 from ...persistence.speech_model import SpeechModel
 from .base import ModelNotReadyError, TranscriptionProviderError, TranscriptionResult
@@ -314,10 +315,10 @@ def missing_runtime_message(model: SpeechModel) -> str:
         package = "onnx-asr"
     else:
         package = "sherpa-onnx"
-    return (
-        f"{model.display_name} needs the {package} runtime. Install it with: "
-        f"pip install {package} — or choose a Whisper model, which works out of the box."
-    )
+    return tr(
+        "{model} needs the {package} runtime. Install it with: pip install "
+        "{package} — or choose a Whisper model, which works out of the box."
+    ).format(model=model.display_name, package=package)
 
 
 def engine_is_installable(model: SpeechModel) -> bool:

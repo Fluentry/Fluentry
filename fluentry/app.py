@@ -67,7 +67,7 @@ from .services.providers.base import TranscriptionProviderError
 from .services.text_pipeline import PipelineContext, TextPipeline
 from .services.vocabulary_store import VocabularyStore
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_ID = "dev.fluentry.Fluentry"
 
 DEFAULT_DICTATION_PROMPT = (

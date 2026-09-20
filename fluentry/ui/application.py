@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from ..analytics.identity import ensure_first_open_recorded, first_open_at
 from ..app import APP_VERSION, AppState
+from ..i18n import is_rtl, resolve as _resolve_language, set_language, tr
 from ..services.localapi.server import Configuration, LocalAPIServer
 from .icons import configure_icon_theme
 from .main_window import MainWindow
@@ -28,6 +29,14 @@ from .settings_window import SettingsWindow
 from .single_instance import SingleInstance
 from .theme import apply_system_font, palette_for, stylesheet
 from .tray import TrayActions, TrayController
+
+
+def _apply_language(app: QApplication, preferred: str) -> None:
+    """Activate the stored (or locale-implied) interface language."""
+    set_language(_resolve_language(preferred))
+    app.setLayoutDirection(
+        Qt.LayoutDirection.RightToLeft if is_rtl() else Qt.LayoutDirection.LeftToRight
+    )
 
 
 class _Bridge(QObject):
@@ -51,6 +60,8 @@ class FluentryApplication:
         apply_system_font(self.qt)
 
         self.state = app_state or AppState()
+        # Decide the interface language before any widget text is built.
+        _apply_language(self.qt, self.state.settings.ui_language)
         self.palette = self._palette()
         self.qt.setStyleSheet(stylesheet(self.palette))
 
@@ -67,6 +78,7 @@ class FluentryApplication:
         self.state.asr.focus_return_seconds = 0.25
         self.main_window = MainWindow(self.state, self.palette)
         self.settings_window = SettingsWindow(self.state, self.palette, self.main_window)
+        self.settings_window.on_request_restart = self.restart
         self.main_window.on_open_settings = lambda: self._open_settings(SettingsSection.GENERAL)
         # A fresh install has no engine, and the wizard is the thing that
         # walks somebody through choosing and downloading one.
@@ -213,12 +225,12 @@ class FluentryApplication:
             self._level_timer.start()
             if self.tray is not None:
                 self.tray.set_recording(True)
-                self.tray.set_status("Recording…")
+                self.tray.set_status(tr("Recording…"))
         elif state == "transcribing":
             self.overlay.set_mode(OverlayMode.TRANSCRIBING)
             if self.tray is not None:
                 self.tray.set_recording(False)
-                self.tray.set_status("Transcribing…")
+                self.tray.set_status(tr("Transcribing…"))
         elif state == "inserting":
             # Take the overlay down before the text is inserted: while it is
             # up it holds the keyboard focus, and the insertion would land on
@@ -227,13 +239,13 @@ class FluentryApplication:
             self.overlay.dismiss()
             if self.tray is not None:
                 self.tray.set_recording(False)
-                self.tray.set_status("Inserting…")
+                self.tray.set_status(tr("Inserting…"))
         elif state == "idle":
             self._level_timer.stop()
             self.overlay.dismiss()
             if self.tray is not None:
                 self.tray.set_recording(False)
-                self.tray.set_status("Idle")
+                self.tray.set_status(tr("Idle"))
             self.main_window.refresh_current_page()
         elif state == "appearance":
             self._reload_appearance()

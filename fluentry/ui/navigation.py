@@ -14,6 +14,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from ..i18n import tr
+
 
 class SidebarItem(str, Enum):
     WELCOME = "welcome"
@@ -32,18 +34,18 @@ class SidebarItem(str, Enum):
     @property
     def title(self) -> str:
         return {
-            SidebarItem.WELCOME: "Welcome",
-            SidebarItem.VOICE_ENGINE: "Voice Engine",
-            SidebarItem.AI_ENHANCEMENTS: "AI Enhancement",
-            SidebarItem.CLEANUP_STYLES: "Cleanup Styles",
-            SidebarItem.MEETING_TOOLS: "Meeting Tools",
-            SidebarItem.CUSTOM_DICTIONARY: "Custom Dictionary",
-            SidebarItem.STATS: "Stats",
-            SidebarItem.HISTORY: "History",
-            SidebarItem.CHANGELOG: "Changelog",
-            SidebarItem.FEEDBACK: "Feedback",
-            SidebarItem.COMMAND_MODE: "Command Mode",
-            SidebarItem.REWRITE_MODE: "Edit Mode",
+            SidebarItem.WELCOME: tr("Welcome"),
+            SidebarItem.VOICE_ENGINE: tr("Voice Engine"),
+            SidebarItem.AI_ENHANCEMENTS: tr("AI Enhancement"),
+            SidebarItem.CLEANUP_STYLES: tr("Cleanup Styles"),
+            SidebarItem.MEETING_TOOLS: tr("Meeting Tools"),
+            SidebarItem.CUSTOM_DICTIONARY: tr("Custom Dictionary"),
+            SidebarItem.STATS: tr("Stats"),
+            SidebarItem.HISTORY: tr("History"),
+            SidebarItem.CHANGELOG: tr("Changelog"),
+            SidebarItem.FEEDBACK: tr("Feedback"),
+            SidebarItem.COMMAND_MODE: tr("Command Mode"),
+            SidebarItem.REWRITE_MODE: tr("Edit Mode"),
         }[self]
 
     @property
@@ -81,13 +83,13 @@ class SettingsSection(str, Enum):
     @property
     def title(self) -> str:
         return {
-            SettingsSection.GENERAL: "General",
-            SettingsSection.DICTATION: "Dictation",
-            SettingsSection.NOTIFICATIONS: "Notifications",
-            SettingsSection.AUDIO: "Audio",
-            SettingsSection.OVERLAY: "Overlay",
-            SettingsSection.DATA_AND_DIAGNOSTICS: "Data & Diagnostics",
-            SettingsSection.EXPERIMENTAL: "Experimental",
+            SettingsSection.GENERAL: tr("General"),
+            SettingsSection.DICTATION: tr("Dictation"),
+            SettingsSection.NOTIFICATIONS: tr("Notifications"),
+            SettingsSection.AUDIO: tr("Audio"),
+            SettingsSection.OVERLAY: tr("Overlay"),
+            SettingsSection.DATA_AND_DIAGNOSTICS: tr("Data & Diagnostics"),
+            SettingsSection.EXPERIMENTAL: tr("Experimental"),
         }[self]
 
     @property

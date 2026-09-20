@@ -32,6 +32,8 @@ from .pages import (
 from .tray import window_icon
 from .widgets import HeaderBar, button
 
+from ..i18n import tr
+
 SIDEBAR_ITEMS = [
     SidebarItem.WELCOME,
     SidebarItem.VOICE_ENGINE,
@@ -75,8 +77,8 @@ class MainWindow(QMainWindow):
         content_column = QVBoxLayout(content_pane)
         content_column.setContentsMargins(0, 0, 0, 0)
         content_column.setSpacing(0)
-        self.header = HeaderBar("Welcome")
-        self.header.add_action(button("Settings", self._open_settings))
+        self.header = HeaderBar(tr("Welcome"))
+        self.header.add_action(button(tr("Settings"), self._open_settings))
         content_column.addWidget(self.header)
 
         layout.addWidget(sidebar_pane)

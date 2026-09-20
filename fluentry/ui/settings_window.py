@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..i18n import language_choices, tr
 from ..models.hotkey import HotkeyShortcut
 from ..models.keycodes import MODIFIER_KEY_FLAGS, ModifierFlags
 from ..persistence.settings_store import HotkeyActivationMode
@@ -75,7 +76,7 @@ class ShortcutRecorder(QPushButton):
 
     def _toggle(self) -> None:
         self._recording = self.isChecked()
-        self.setText("Press a shortcut…" if self._recording else self._shortcut.display_string)
+        self.setText(tr("Press a shortcut…") if self._recording else self._shortcut.display_string)
         if self._recording:
             self.grabKeyboard()
         else:
@@ -120,14 +121,17 @@ class SettingsWindow(QDialog):
         super().__init__(parent)
         self._app = app_state
         self._palette = palette
-        self.setWindowTitle("Fluentry Settings")
+        #: Set by the application: relaunch in place so a new interface
+        #: language takes effect. None falls back to just storing the choice.
+        self.on_request_restart = None
+        self.setWindowTitle(tr("Fluentry Settings"))
         self.resize(820, 620)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
-        self.header = HeaderBar("Settings")
+        self.header = HeaderBar(tr("Settings"))
         outer.addWidget(self.header)
 
         body = QWidget()
@@ -171,7 +175,7 @@ class SettingsWindow(QDialog):
 
     def _set_history_auto_clear(self, interval: HistoryAutoClearInterval) -> None:
         self._app.settings.history_auto_clear_interval = interval
-        self.history_clearing_hint.setText(interval.description)
+        self.history_clearing_hint.setText(tr(interval.description))
         # Apply it now rather than at the next launch.
         self._app.prune_expired_history()
 
@@ -185,17 +189,17 @@ class SettingsWindow(QDialog):
 
     def _build_general(self) -> QWidget:
         settings = self._app.settings
-        container, layout = page("General")
+        container, layout = page(tr("General"))
 
-        appearance = Card("Appearance")
+        appearance = Card(tr("Appearance"))
         theme = combo(
-            [(option.display_name, option.value) for option in ThemePreference],
+            [(tr(option.display_name), option.value) for option in ThemePreference],
             settings.theme_preference.value,
         )
         theme.currentIndexChanged.connect(
             lambda: self._app.set_theme(ThemePreference(theme.currentData()))
         )
-        appearance.add_labelled("Theme", theme)
+        appearance.add_labelled(tr("Theme"), theme)
 
         accent = combo(
             [(option.value, option.value) for option in AccentColorOption],
@@ -204,21 +208,34 @@ class SettingsWindow(QDialog):
         accent.currentIndexChanged.connect(
             lambda: self._app.set_accent(AccentColorOption(accent.currentData()))
         )
-        appearance.add_labelled("Accent colour", accent)
+        appearance.add_labelled(tr("Accent colour"), accent)
+
+        language = combo(
+            [(tr("Match the system language"), "system")]
+            + [(name, code) for code, name in language_choices()],
+            settings.ui_language,
+        )
+        language.currentIndexChanged.connect(
+            lambda: self._change_language(language.currentData())
+        )
+        appearance.add_labelled(tr("Language"), language)
+        appearance.add(
+            hint_label(tr("Fluentry restarts to apply a new interface language."))
+        )
         layout.addWidget(appearance)
 
-        startup = Card("Startup")
+        startup = Card(tr("Startup"))
         launch = ToggleRow(
-            "Start Fluentry at login",
-            "Adds a desktop autostart entry under ~/.config/autostart.",
+            tr("Start Fluentry at login"),
+            tr("Adds a desktop autostart entry under ~/.config/autostart."),
             settings.launch_at_startup,
         )
         launch.toggled.connect(self._app.set_launch_at_startup)
         startup.add(launch)
 
         show_window = ToggleRow(
-            "Open the main window at login",
-            "Leave this off to start quietly in the tray.",
+            tr("Open the main window at login"),
+            tr("Leave this off to start quietly in the tray."),
             settings.show_main_window_at_login_launch,
         )
         show_window.toggled.connect(
@@ -230,19 +247,36 @@ class SettingsWindow(QDialog):
         layout.addStretch(1)
         return scrollable(container)
 
+    def _change_language(self, code: str) -> None:
+        if not code or code == self._app.settings.ui_language:
+            return
+        self._app.settings.ui_language = code
+        # The interface is built once, so a live language swap would mean
+        # rebuilding every window; a clean relaunch is simpler and is what
+        # the app already does after a runtime install.
+        answer = QMessageBox.question(
+            self,
+            tr("Change language"),
+            tr("Fluentry needs to restart to change the interface language. Restart now?"),
+            QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok,
+            QMessageBox.StandardButton.Ok,
+        )
+        if answer is QMessageBox.StandardButton.Ok and self.on_request_restart is not None:
+            self.on_request_restart()
+
     def _build_dictation(self) -> QWidget:
         settings = self._app.settings
-        container, layout = page("Dictation")
+        container, layout = page(tr("Dictation"))
 
         shortcut_card = Card(
-            "Shortcut", "A bare modifier tap (for example Right Alt) works as a shortcut."
+            tr("Shortcut"), tr("A bare modifier tap (for example Right Alt) works as a shortcut.")
         )
         recorder = ShortcutRecorder(settings.hotkey_shortcut, self._app.set_primary_shortcut)
-        shortcut_card.add_labelled("Dictation shortcut", recorder)
+        shortcut_card.add_labelled(tr("Dictation shortcut"), recorder)
 
         mode = combo(
             [
-                (HotkeyActivationMode.DISPLAY_NAMES[value], value)
+                (tr(HotkeyActivationMode.DISPLAY_NAMES[value]), value)
                 for value in HotkeyActivationMode.ALL
             ],
             settings.hotkey_mode,
@@ -250,15 +284,15 @@ class SettingsWindow(QDialog):
         mode.currentIndexChanged.connect(
             lambda: self._app.set_hotkey_mode(mode.currentData())
         )
-        shortcut_card.add_labelled("Activation", mode)
+        shortcut_card.add_labelled(tr("Activation"), mode)
         shortcut_card.add(
-            hint_label(HotkeyActivationMode.DESCRIPTIONS[settings.hotkey_mode])
+            hint_label(tr(HotkeyActivationMode.DESCRIPTIONS[settings.hotkey_mode]))
         )
         layout.addWidget(shortcut_card)
 
-        insertion = Card("Text insertion")
+        insertion = Card(tr("Text insertion"))
         insertion_mode = combo(
-            [(value.display_name, value.value) for value in TextInsertionMode],
+            [(tr(value.display_name), value.value) for value in TextInsertionMode],
             settings.text_insertion_mode.value,
         )
         insertion_mode.currentIndexChanged.connect(
@@ -266,11 +300,11 @@ class SettingsWindow(QDialog):
                 settings, "text_insertion_mode", TextInsertionMode(insertion_mode.currentData())
             )
         )
-        insertion.add_labelled("Mode", insertion_mode)
-        insertion.add(hint_label(settings.text_insertion_mode.description))
+        insertion.add_labelled(tr("Mode"), insertion_mode)
+        insertion.add(hint_label(tr(settings.text_insertion_mode.description)))
 
         copy_toggle = ToggleRow(
-            "Also copy each dictation to the clipboard",
+            tr("Also copy each dictation to the clipboard"),
             checked=settings.copy_transcription_to_clipboard,
         )
         copy_toggle.toggled.connect(
@@ -279,33 +313,33 @@ class SettingsWindow(QDialog):
         insertion.add(copy_toggle)
         layout.addWidget(insertion)
 
-        formatting = Card("Formatting")
+        formatting = Card(tr("Formatting"))
         for title, hint, attribute in [
             (
-                "Spoken punctuation",
-                'Say "literal comma" to type a comma.',
+                tr("Spoken punctuation"),
+                tr('Say "literal comma" to type a comma.'),
                 "auto_convert_punctuation_enabled",
             ),
             (
-                "Slash commands and mentions",
-                'Turns "run slash deploy" into "/deploy" in supported apps.',
+                tr("Slash commands and mentions"),
+                tr('Turns "run slash deploy" into "/deploy" in supported apps.'),
                 "literal_dictation_formatting_enabled",
             ),
-            ("Remove filler words", 'Drops "um", "uh" and similar.', "remove_filler_words_enabled"),
+            (tr("Remove filler words"), tr('Drops "um", "uh" and similar.'), "remove_filler_words_enabled"),
             (
-                "Lowercase the first letter",
-                "Useful for search boxes and chat.",
+                tr("Lowercase the first letter"),
+                tr("Useful for search boxes and chat."),
                 "gaav_lowercase_first_letter_enabled",
             ),
-            ("Remove the trailing period", None, "gaav_remove_trailing_period_enabled"),
+            (tr("Remove the trailing period"), None, "gaav_remove_trailing_period_enabled"),
             (
-                "Continuous dictation spacing",
-                "Adds the spaces that make consecutive dictations read as one document.",
+                tr("Continuous dictation spacing"),
+                tr("Adds the spaces that make consecutive dictations read as one document."),
                 "continuous_dictation_spacing_enabled",
             ),
             (
-                "Context-aware capitalization",
-                "Capitalizes only when the previous text ended a sentence.",
+                tr("Context-aware capitalization"),
+                tr("Capitalizes only when the previous text ended a sentence."),
                 "context_aware_capitalization_enabled",
             ),
         ]:
@@ -319,11 +353,11 @@ class SettingsWindow(QDialog):
         prefix.editingFinished.connect(
             lambda: setattr(settings, "punctuation_dictionary_prefix", prefix.text())
         )
-        formatting.add_labelled("Punctuation prefix", prefix)
+        formatting.add_labelled(tr("Punctuation prefix"), prefix)
         layout.addWidget(formatting)
 
-        send = Card("Spoken send", "End a dictation with a phrase to submit it.")
-        send_toggle = ToggleRow("Enable spoken send", checked=settings.spoken_send_enabled)
+        send = Card(tr("Spoken send"), tr("End a dictation with a phrase to submit it."))
+        send_toggle = ToggleRow(tr("Enable spoken send"), checked=settings.spoken_send_enabled)
         send_toggle.toggled.connect(lambda value: setattr(settings, "spoken_send_enabled", value))
         send.add(send_toggle)
 
@@ -331,16 +365,16 @@ class SettingsWindow(QDialog):
         phrase.editingFinished.connect(
             lambda: setattr(settings, "spoken_send_phrase", phrase.text())
         )
-        send.add_labelled("Phrase", phrase)
+        send.add_labelled(tr("Phrase"), phrase)
 
         send_key = combo(
-            [(value.display_name, value.value) for value in SpokenSendKey],
+            [(tr(value.display_name), value.value) for value in SpokenSendKey],
             settings.spoken_send_key.value,
         )
         send_key.currentIndexChanged.connect(
             lambda: setattr(settings, "spoken_send_key", SpokenSendKey(send_key.currentData()))
         )
-        send.add_labelled("Send with", send_key)
+        send.add_labelled(tr("Send with"), send_key)
         layout.addWidget(send)
 
         layout.addStretch(1)
@@ -348,18 +382,18 @@ class SettingsWindow(QDialog):
 
     def _build_notifications(self) -> QWidget:
         settings = self._app.settings
-        container, layout = page("Notifications")
+        container, layout = page(tr("Notifications"))
 
-        card = Card("Desktop notifications")
+        card = Card(tr("Desktop notifications"))
         for title, hint, attribute in [
             (
-                "Tell me when AI enhancement fails",
-                "Your transcript is still typed; this explains why it was not cleaned up.",
+                tr("Tell me when AI enhancement fails"),
+                tr("Your transcript is still typed; this explains why it was not cleaned up."),
                 "notify_ai_processing_failures",
             ),
             (
-                "Tell me when the microphone changes",
-                "Shown when Fluentry switches to a different input device.",
+                tr("Tell me when the microphone changes"),
+                tr("Shown when Fluentry switches to a different input device."),
                 "show_microphone_change_alerts",
             ),
         ]:
@@ -368,9 +402,9 @@ class SettingsWindow(QDialog):
             card.add(toggle)
         layout.addWidget(card)
 
-        sounds = Card("Sounds")
+        sounds = Card(tr("Sounds"))
         sound = combo(
-            [(value.display_name, value.value) for value in TranscriptionStartSound],
+            [(tr(value.display_name), value.value) for value in TranscriptionStartSound],
             settings.transcription_start_sound.value,
         )
         sound.currentIndexChanged.connect(
@@ -380,7 +414,7 @@ class SettingsWindow(QDialog):
                 TranscriptionStartSound(sound.currentData()),
             )
         )
-        sounds.add_labelled("Start sound", sound)
+        sounds.add_labelled(tr("Start sound"), sound)
 
         volume = QDoubleSpinBox()
         volume.setRange(0.0, 1.0)
@@ -389,7 +423,7 @@ class SettingsWindow(QDialog):
         volume.valueChanged.connect(
             lambda value: setattr(settings, "transcription_sound_volume", value)
         )
-        sounds.add_labelled("Volume", volume)
+        sounds.add_labelled(tr("Volume"), volume)
         layout.addWidget(sounds)
 
         layout.addStretch(1)
@@ -397,9 +431,9 @@ class SettingsWindow(QDialog):
 
     def _build_audio(self) -> QWidget:
         settings = self._app.settings
-        container, layout = page("Audio")
+        container, layout = page(tr("Audio"))
 
-        card = Card("Capture")
+        card = Card(tr("Capture"))
         card.add(hint_label(self._app.capture_backend_description()))
 
         threshold = QDoubleSpinBox()
@@ -409,11 +443,11 @@ class SettingsWindow(QDialog):
         threshold.valueChanged.connect(
             lambda value: setattr(settings, "visualizer_noise_threshold", value)
         )
-        card.add_labelled("Level meter noise floor", threshold)
+        card.add_labelled(tr("Level meter noise floor"), threshold)
 
         skip_silence = ToggleRow(
-            "Skip clearly silent recordings",
-            "Avoids running the model on an accidental short press.",
+            tr("Skip clearly silent recordings"),
+            tr("Avoids running the model on an accidental short press."),
             settings.skip_silent_recordings_enabled,
         )
         skip_silence.toggled.connect(
@@ -422,10 +456,10 @@ class SettingsWindow(QDialog):
         card.add(skip_silence)
         layout.addWidget(card)
 
-        media = Card("Other media")
+        media = Card(tr("Other media"))
         pause_media = ToggleRow(
-            "Pause playback while dictating",
-            "Uses MPRIS, and only resumes what Fluentry paused.",
+            tr("Pause playback while dictating"),
+            tr("Uses MPRIS, and only resumes what Fluentry paused."),
             settings.pause_media_during_transcription,
         )
         pause_media.toggled.connect(
@@ -440,32 +474,32 @@ class SettingsWindow(QDialog):
 
     def _build_overlay(self) -> QWidget:
         settings = self._app.settings
-        container, layout = page("Overlay")
+        container, layout = page(tr("Overlay"))
 
-        card = Card("Recording overlay")
+        card = Card(tr("Recording overlay"))
         size = combo(
-            [(value.display_name, value.value) for value in OverlaySize],
+            [(tr(value.display_name), value.value) for value in OverlaySize],
             settings.overlay_size.value,
         )
         size.currentIndexChanged.connect(
             lambda: self._app.set_overlay_size(OverlaySize(size.currentData()))
         )
-        card.add_labelled("Size", size)
+        card.add_labelled(tr("Size"), size)
 
         position = combo(
-            [(value.display_name, value.value) for value in OverlayPosition],
+            [(tr(value.display_name), value.value) for value in OverlayPosition],
             settings.overlay_position.value,
         )
         position.currentIndexChanged.connect(
             lambda: self._app.set_overlay_position(OverlayPosition(position.currentData()))
         )
-        card.add_labelled("Position", position)
+        card.add_labelled(tr("Position"), position)
 
         offset = QSpinBox()
         offset.setRange(10, 1000)
         offset.setValue(int(settings.overlay_bottom_offset))
         offset.valueChanged.connect(lambda value: self._app.set_overlay_offset(float(value)))
-        card.add_labelled("Distance from edge", offset)
+        card.add_labelled(tr("Distance from edge"), offset)
 
         preview = QSpinBox()
         preview.setRange(50, 800)
@@ -474,10 +508,10 @@ class SettingsWindow(QDialog):
         preview.valueChanged.connect(
             lambda value: setattr(settings, "transcription_preview_char_limit", value)
         )
-        card.add_labelled("Preview characters", preview)
+        card.add_labelled(tr("Preview characters"), preview)
 
         streaming = ToggleRow(
-            "Show a live preview while speaking", checked=settings.enable_streaming_preview
+            tr("Show a live preview while speaking"), checked=settings.enable_streaming_preview
         )
         streaming.toggled.connect(
             lambda value: setattr(settings, "enable_streaming_preview", value)
@@ -490,12 +524,12 @@ class SettingsWindow(QDialog):
 
     def _build_data(self) -> QWidget:
         settings = self._app.settings
-        container, layout = page("Data & Diagnostics")
+        container, layout = page(tr("Data & Diagnostics"))
 
-        history = Card("History")
+        history = Card(tr("History"))
         save_history = ToggleRow(
-            "Keep a history of my dictations",
-            "Stored only on this machine, in an SQLite database.",
+            tr("Keep a history of my dictations"),
+            tr("Stored only on this machine, in an SQLite database."),
             settings.save_transcription_history,
         )
         save_history.toggled.connect(
@@ -504,22 +538,22 @@ class SettingsWindow(QDialog):
         history.add(save_history)
 
         clearing = combo(
-            [(value.display_name, value.value) for value in HistoryAutoClearInterval],
+            [(tr(value.display_name), value.value) for value in HistoryAutoClearInterval],
             settings.history_auto_clear_interval.value,
         )
         self.history_clearing_hint = hint_label(
-            settings.history_auto_clear_interval.description
+            tr(settings.history_auto_clear_interval.description)
         )
         clearing.currentIndexChanged.connect(
             lambda: self._set_history_auto_clear(
                 HistoryAutoClearInterval(clearing.currentData())
             )
         )
-        history.add_labelled("Clear history automatically", clearing)
+        history.add_labelled(tr("Clear history automatically"), clearing)
         history.add(self.history_clearing_hint)
 
         metrics = ToggleRow(
-            "Show performance details in History", checked=settings.show_history_performance_metrics
+            tr("Show performance details in History"), checked=settings.show_history_performance_metrics
         )
         metrics.toggled.connect(
             lambda value: setattr(settings, "show_history_performance_metrics", value)
@@ -530,28 +564,30 @@ class SettingsWindow(QDialog):
         wpm.setRange(10, 200)
         wpm.setValue(settings.user_typing_wpm)
         wpm.valueChanged.connect(lambda value: setattr(settings, "user_typing_wpm", value))
-        history.add_labelled("My typing speed (WPM)", wpm, "Used for the time-saved estimate.")
+        history.add_labelled(tr("My typing speed (WPM)"), wpm, tr("Used for the time-saved estimate."))
         layout.addWidget(history)
 
-        backup = Card("Backup")
+        backup = Card(tr("Backup"))
         backup.add_row(
-            primary_button("Export settings…", self._export_backup),
-            button("Import settings…", self._import_backup),
+            primary_button(tr("Export settings…"), self._export_backup),
+            button(tr("Import settings…"), self._import_backup),
         )
-        backup.add(hint_label("Includes settings, prompts, dictionary and history."))
+        backup.add(hint_label(tr("Includes settings, prompts, dictionary and history.")))
         layout.addWidget(backup)
 
-        privacy = Card("Privacy")
+        privacy = Card(tr("Privacy"))
         analytics = ToggleRow(
-            "Share anonymous usage analytics",
-            "Daily counts only, aggregated locally first. No transcripts ever leave "
-            "this machine.",
+            tr("Share anonymous usage analytics"),
+            tr(
+                "Daily counts only, aggregated locally first. No transcripts ever "
+                "leave this machine."
+            ),
             settings.share_detailed_analytics,
         )
         analytics.toggled.connect(self._app.set_analytics_enabled)
         privacy.add(analytics)
 
-        logs = ToggleRow("Write debug logs", checked=settings.enable_debug_logs)
+        logs = ToggleRow(tr("Write debug logs"), checked=settings.enable_debug_logs)
         logs.toggled.connect(lambda value: setattr(settings, "enable_debug_logs", value))
         privacy.add(logs)
         privacy.add(hint_label(self._app.log_location_description()))
@@ -563,13 +599,13 @@ class SettingsWindow(QDialog):
     def _build_experimental(self) -> QWidget:
         settings = self._app.settings
         container, layout = page(
-            "Experimental", "These are on by default and can be turned off if they misbehave."
+            tr("Experimental"), tr("These are on by default and can be turned off if they misbehave.")
         )
 
-        card = Card("Dictation")
+        card = Card(tr("Dictation"))
         incremental = ToggleRow(
-            "Incremental finalization",
-            "Reuses already-processed audio so long recordings finish faster.",
+            tr("Incremental finalization"),
+            tr("Reuses already-processed audio so long recordings finish faster."),
             settings.experimental_parakeet_unified_final_enabled,
         )
         incremental.toggled.connect(
@@ -580,8 +616,8 @@ class SettingsWindow(QDialog):
         card.add(incremental)
 
         learning = ToggleRow(
-            "Learn from my corrections",
-            "Suggests a dictionary entry after you fix the same word twice.",
+            tr("Learn from my corrections"),
+            tr("Suggests a dictionary entry after you fix the same word twice."),
             settings.automatic_dictionary_learning_enabled,
         )
         learning.toggled.connect(
@@ -590,8 +626,8 @@ class SettingsWindow(QDialog):
         card.add(learning)
 
         boosting = ToggleRow(
-            "Vocabulary boosting",
-            "Biases the model toward your custom words.",
+            tr("Vocabulary boosting"),
+            tr("Biases the model toward your custom words."),
             settings.vocabulary_boosting_enabled,
         )
         boosting.toggled.connect(
@@ -600,7 +636,7 @@ class SettingsWindow(QDialog):
         card.add(boosting)
         layout.addWidget(card)
 
-        api = Card("Local API", "Lets other tools on this machine drive Fluentry.")
+        api = Card(tr("Local API"), tr("Lets other tools on this machine drive Fluentry."))
         api.add(hint_label(self._app.local_api_description()))
         layout.addWidget(api)
 
@@ -613,15 +649,15 @@ class SettingsWindow(QDialog):
         from PySide6.QtWidgets import QFileDialog
 
         suggested = self._app.backup.suggested_filename()
-        path, _ = QFileDialog.getSaveFileName(self, "Export settings", suggested, "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, tr("Export settings"), suggested, "JSON (*.json)")
         if path:
             self._app.export_backup(path)
 
     def _import_backup(self) -> None:
         from PySide6.QtWidgets import QFileDialog
 
-        path, _ = QFileDialog.getOpenFileName(self, "Import settings", "", "JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(self, tr("Import settings"), "", "JSON (*.json)")
         if not path:
             return
         message = self._app.import_backup(path)
-        QMessageBox.information(self, "Import settings", message)
+        QMessageBox.information(self, tr("Import settings"), message)

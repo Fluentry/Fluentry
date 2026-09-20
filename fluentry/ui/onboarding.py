@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..i18n import tr
 from ..persistence import voice_engine_languages as catalog
 from ..persistence.speech_model import SpeechModel
 from ..services.providers.onnx_asr import engine_is_installable, missing_runtime_message
@@ -79,7 +80,7 @@ class OnboardingWindow(QWidget):
         app_state.add_state_observer(self._dictation_state.emit)
 
         self.setObjectName("Window")
-        self.setWindowTitle("Welcome to Fluentry")
+        self.setWindowTitle(tr("Welcome to Fluentry"))
         self.setWindowIcon(window_icon(palette.accent))
         self.resize(760, 560)
 
@@ -87,7 +88,7 @@ class OnboardingWindow(QWidget):
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
-        self.header = HeaderBar("Welcome to Fluentry")
+        self.header = HeaderBar(tr("Welcome to Fluentry"))
         self._brand = brand_lockup(palette, height=26)  # 20% larger than the 22 used elsewhere
         if self._brand is not None:
             # The wordmark says the name better than a label does.
@@ -156,9 +157,11 @@ class OnboardingWindow(QWidget):
         layout = QVBoxLayout(page)
         layout.addWidget(
             hint_label(
-                "Fluentry listens when you hold your shortcut and types what you said "
-                "into whatever app you are using. Everything can run on this machine: "
-                "no account, no upload."
+                tr(
+                    "Fluentry listens when you hold your shortcut and types what you "
+                    "said into whatever app you are using. Everything can run on this "
+                    "machine: no account, no upload."
+                )
             )
         )
         layout.addStretch(1)
@@ -167,7 +170,7 @@ class OnboardingWindow(QWidget):
     def _build_language(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        card = Card("Language", "The engine list adapts to what you pick.")
+        card = Card(tr("Language"), tr("The engine list adapts to what you pick."))
         self._language_buttons = QButtonGroup(page)
         self._language_buttons.setExclusive(True)
         current = self._app.settings.onboarding_selected_language_id
@@ -181,7 +184,7 @@ class OnboardingWindow(QWidget):
             grid.setColumnStretch(column, 1)
         card.add_row_layout(grid)
         for index, language in enumerate(catalog.popular_languages()):
-            choice = QRadioButton(language.popular_display_name)
+            choice = QRadioButton(tr(language.popular_display_name))
             choice.setProperty("languageID", language.id)
             choice.setChecked(language.id == current)
             self._language_buttons.addButton(choice)
@@ -196,7 +199,7 @@ class OnboardingWindow(QWidget):
     def _build_voice_model(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        self.route_card = Card("Voice engine", "Pick one, then download it.")
+        self.route_card = Card(tr("Voice engine"), tr("Pick one, then download it."))
         self._route_buttons = QButtonGroup(page)
         self._route_container = QVBoxLayout()
         self.route_card.add_row_layout(self._route_container)
@@ -206,7 +209,7 @@ class OnboardingWindow(QWidget):
         # button of the whole step sat orphaned in empty space.
         self.model_status = hint_label("")
         self.route_card.add(self.model_status)
-        self.download_button = primary_button("Download", self._download_model)
+        self.download_button = primary_button(tr("Download"), self._download_model)
         self.route_card.add_actions(self.download_button)
         # Hundreds of megabytes with no sign of movement reads as a freeze.
         self.download_progress = QProgressBar()
@@ -223,14 +226,14 @@ class OnboardingWindow(QWidget):
     def _build_permissions(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        self.permissions_card = Card("Access", "What Fluentry needs from your system to dictate.")
+        self.permissions_card = Card(tr("Access"), tr("What Fluentry needs from your system to dictate."))
         self.permissions_labels: list[QLabel] = []
         for _ in range(4):
             label = hint_label("")
             self.permissions_card.add(label)
             self.permissions_labels.append(label)
         layout.addWidget(self.permissions_card)
-        layout.addWidget(button("Re-check", self._refresh_permissions), 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(button(tr("Re-check"), self._refresh_permissions), 0, Qt.AlignmentFlag.AlignLeft)
         layout.addStretch(1)
         return page
 
@@ -242,7 +245,7 @@ class OnboardingWindow(QWidget):
         # step is about now sits in one card, and the place the words will
         # land is visible before they land, so the screen does not change
         # shape underneath the person reading it.
-        card = Card("Try a dictation", "Nothing here is saved or sent anywhere.")
+        card = Card(tr("Try a dictation"), tr("Nothing here is saved or sent anywhere."))
         # The instruction is the interface: hold the real shortcut and speak,
         # exactly as dictation works everywhere else. Clicking a "Start
         # Recording" button and watching it flip to "Stop" was a second,
@@ -254,10 +257,10 @@ class OnboardingWindow(QWidget):
         self.playground_hint.setObjectName("RowTitle")
         card.add(self.playground_hint)
 
-        self.playground_button = primary_button("Start Recording", self._toggle_playground)
+        self.playground_button = primary_button(tr("Start Recording"), self._toggle_playground)
         card.add_actions(self.playground_button)
 
-        self.playground_result = QLabel("Your words will appear here.")
+        self.playground_result = QLabel(tr("Your words will appear here."))
         self.playground_result.setWordWrap(True)
         self.playground_result.setObjectName("SectionTitle")
         self.playground_result.setMinimumHeight(64)
@@ -291,13 +294,15 @@ class OnboardingWindow(QWidget):
         layout = QVBoxLayout(page)
         layout.addWidget(
             hint_label(
-                "AI enhancement rewrites each transcript with a language model before it is "
-                "typed. It is entirely optional — dictation works without it, and you can "
-                "set it up later in Settings."
+                tr(
+                    "AI enhancement rewrites each transcript with a language model "
+                    "before it is typed. It is entirely optional — dictation works "
+                    "without it, and you can set it up later in Settings."
+                )
             )
         )
         layout.addWidget(
-            button("Open AI Enhancement settings", self._open_ai_settings),
+            button(tr("Open AI Enhancement settings"), self._open_ai_settings),
             0,
             Qt.AlignmentFlag.AlignLeft,
         )
@@ -311,7 +316,10 @@ class OnboardingWindow(QWidget):
         self.title.setText(step.title)
         self.subtitle.setText(step.subtitle)
         self.header.set_title(
-            "Welcome to Fluentry", f"Step {int(step) + 1} of {int(LAST_STEP) + 1}"
+            tr("Welcome to Fluentry"),
+            tr("Step {current} of {total}").format(
+                current=int(step) + 1, total=int(LAST_STEP) + 1
+            ),
         )
         self.progress.setValue(int(self._flow.progress * 100))
         self.stack.setCurrentWidget(self._pages[step])
@@ -330,19 +338,19 @@ class OnboardingWindow(QWidget):
         """Why Continue is unavailable, in the words of what to do next."""
         if step is Step.VOICE_MODEL:
             if readiness.model_preparation_in_progress:
-                return "Downloading…"
+                return tr("Downloading…")
             if not readiness.has_language_routes:
-                return "No engine supports this language yet."
+                return tr("No engine supports this language yet.")
             if not engine_is_installable(self._app.settings.selected_speech_model):
-                return "This engine's runtime is not installed."
-            return "Download the engine first."
+                return tr("This engine's runtime is not installed.")
+            return tr("Download the engine first.")
         if step is Step.PERMISSIONS:
             if not readiness.microphone_ready:
-                return "No microphone was found."
+                return tr("No microphone was found.")
             if not readiness.typing_ready:
-                return "No way to type into other apps yet."
+                return tr("No way to type into other apps yet.")
         if step is Step.PLAYGROUND and not readiness.playground_ready:
-            return "Try a dictation, or skip."
+            return tr("Try a dictation, or skip.")
         return ""
 
     def _readiness(self) -> Readiness:
@@ -410,9 +418,9 @@ class OnboardingWindow(QWidget):
         language_id = self._app.settings.onboarding_selected_language_id
         routes = catalog.routes_for_language_id(language_id)
         self.language_hint.setText(
-            f"{len(routes)} engine(s) can transcribe this language."
+            tr("{count} engine(s) can transcribe this language.").format(count=len(routes))
             if routes
-            else "No installed engine supports this language yet."
+            else tr("No installed engine supports this language yet.")
         )
         self._refresh_footer()
 
@@ -446,10 +454,10 @@ class OnboardingWindow(QWidget):
             if route.model is recommended:
                 # Named from what the app actually defaults to, not from
                 # whichever entry the sort happened to put first.
-                label = f"{label}   ·   Recommended"
+                label = f"{label}   ·   " + tr("Recommended")
             if not engine_is_installable(route.model):
                 # Say so on the option itself rather than after a failed try.
-                label = f"{label} — runtime not installed"
+                label = f"{label} — " + tr("runtime not installed")
             choice = QRadioButton(label)
             choice.setProperty("routeID", route.id)
             choice.setChecked(route.model == settings.selected_speech_model)
@@ -490,18 +498,20 @@ class OnboardingWindow(QWidget):
         # one thing on this step the user has to act on.
         self._set_status_is_error(bool(self._download_error) and not self._download_in_progress)
         if self._download_in_progress:
-            self.model_status.setText(f"Downloading {model.display_name}…")
+            self.model_status.setText(tr("Downloading {name}…").format(name=model.display_name))
         elif self._download_error:
             # Whatever went wrong outranks the generic size line: it is the
             # only thing that tells the user what to do next.
             self.model_status.setText(self._download_error)
         elif ready:
-            self.model_status.setText(f"{model.display_name} is ready.")
+            self.model_status.setText(tr("{name} is ready.").format(name=model.display_name))
         elif not installable:
             self.model_status.setText(missing_runtime_message(model))
         else:
             self.model_status.setText(
-                f"{model.display_name} needs {model.download_size} of download."
+                tr("{name} needs {size} of download.").format(
+                    name=model.display_name, size=model.download_size
+                )
             )
 
         self.download_button.setVisible(
@@ -551,7 +561,7 @@ class OnboardingWindow(QWidget):
         wizard resumes after the relaunch, on a ready engine.
         """
         self._download_in_progress = False
-        self.model_status.setText("Setup complete — restarting Fluentry…")
+        self.model_status.setText(tr("Setup complete — restarting Fluentry…"))
         self.download_progress.setVisible(False)
         if self.on_request_restart is not None:
             # A beat so the line above is readable before the window blinks.
@@ -569,11 +579,11 @@ class OnboardingWindow(QWidget):
         for label, (name, ok, detail) in zip(
             self.permissions_labels, self._app.readiness_report()
         ):
-            label.setText(f"{'✓' if ok else '•'}  {name}: {detail}")
+            label.setText(f"{'✓' if ok else '•'}  {tr(name)}: {tr(detail)}")
         self._refresh_footer()
 
     def _refresh_playground(self) -> None:
-        shortcut = self._app.settings.primary_dictation_shortcut_display_string or "your shortcut"
+        shortcut = self._app.settings.primary_dictation_shortcut_display_string or tr("your shortcut")
         hotkeys_work = any(
             label == "Global hotkey" and ok for label, ok, _detail in self._app.readiness_report()
         )
@@ -581,41 +591,45 @@ class OnboardingWindow(QWidget):
         if hotkeys_work:
             # The hotkey is the whole feature; let the user try it directly.
             self.playground_hint.setText(
-                f"Hold {shortcut}, say a few words, then release."
+                tr("Hold {shortcut}, say a few words, then release.").format(shortcut=shortcut)
             )
             self.playground_button.setVisible(False)
         else:
             # No global hotkey on this desktop, so offer the button instead
             # of telling the user to press a shortcut nothing will hear.
             self.playground_hint.setText(
-                f"Press the button and say a few words. ({shortcut} will work "
-                "once global hotkeys are available.)"
+                tr(
+                    "Press the button and say a few words. ({shortcut} will work "
+                    "once global hotkeys are available.)"
+                ).format(shortcut=shortcut)
             )
             self.playground_button.setVisible(True)
-            self.playground_button.setText("Stop Recording" if recording else "Start Recording")
+            self.playground_button.setText(tr("Stop Recording") if recording else tr("Start Recording"))
 
         text = self._app.asr.final_text
         if recording:
             # A result from a previous run is stale the moment a new one starts.
-            self.playground_result.setText("Listening…")
+            self.playground_result.setText(tr("Listening…"))
         elif self._dictation_phase == "silent":
             self.playground_result.setText(
-                "That recording was silent. Check the microphone and try again."
+                tr("That recording was silent. Check the microphone and try again.")
             )
         elif self._dictation_phase == "empty":
             self.playground_result.setText(
-                "Nothing was recognised in that recording. Try speaking a little "
-                "longer, or check that the right microphone is selected."
+                tr(
+                    "Nothing was recognised in that recording. Try speaking a little "
+                    "longer, or check that the right microphone is selected."
+                )
             )
         elif self._dictation_phase == "failed":
             # Saying what went wrong beats reverting to the placeholder and
             # leaving the user to conclude the app simply ignored them.
             self.playground_result.setText(
-                self._app.last_error or "That dictation failed. Try again."
+                self._app.last_error or tr("That dictation failed. Try again.")
             )
         elif self._dictation_phase == "transcribing" and not text:
             # Without this the label goes blank between speaking and the result.
-            self.playground_result.setText("Transcribing…")
+            self.playground_result.setText(tr("Transcribing…"))
         elif text:
             self.playground_result.setText(f"“{text}”")
             if not self._app.settings.onboarding_playground_validated:
@@ -623,7 +637,7 @@ class OnboardingWindow(QWidget):
         else:
             # Not blank: the label is where the transcript will appear, and
             # an empty one leaves the step looking like a button on a void.
-            self.playground_result.setText("Your words will appear here.")
+            self.playground_result.setText(tr("Your words will appear here."))
 
     def _open_ai_settings(self) -> None:
         from .navigation import SidebarItem

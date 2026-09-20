@@ -126,6 +126,7 @@ class Keys:
     show_in_dock = "ShowInDock"
     accent_color_option = "AccentColorOption"
     theme_preference = "ThemePreference"
+    ui_language = "UILanguage"
     enable_transcription_sounds = "EnableTranscriptionSounds"
     transcription_start_sound = "TranscriptionStartSound"
     transcription_sound_volume = "TranscriptionSoundVolume"
@@ -1316,6 +1317,16 @@ class SettingsStore:
     @theme_preference.setter
     def theme_preference(self, value: ThemePreference) -> None:
         self._set_enum(Keys.theme_preference, value)
+
+    @property
+    def ui_language(self) -> str:
+        """The interface language code, or "system" to follow the desktop."""
+        return self.defaults.string(Keys.ui_language) or "system"
+
+    @ui_language.setter
+    def ui_language(self, value: str) -> None:
+        self.object_will_change()
+        self.defaults.set(Keys.ui_language, value or "system")
 
     @property
     def overlay_position(self) -> OverlayPosition:

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Callable, Iterable
 
+from ..i18n import tr
+
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
@@ -473,7 +475,7 @@ class SparklineChart(QWidget):
 
         if not self._values:
             painter.setPen(QColor(self._palette.secondary_text))
-            painter.drawText(self.rect(), int(Qt.AlignmentFlag.AlignCenter), "No activity yet")
+            painter.drawText(self.rect(), int(Qt.AlignmentFlag.AlignCenter), tr("No activity yet"))
             return
 
         peak = max(self._values) or 1

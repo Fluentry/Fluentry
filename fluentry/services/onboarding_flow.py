@@ -14,6 +14,7 @@ from datetime import datetime
 from enum import IntEnum
 
 from ..analytics.events import OnboardingOutcome, OnboardingStep as AnalyticsStep
+from ..i18n import tr
 
 
 class Step(IntEnum):
@@ -38,32 +39,32 @@ class Step(IntEnum):
     @property
     def title(self) -> str:
         return {
-            Step.LANDING: "Welcome",
-            Step.LANGUAGE: "Choose Language",
-            Step.VOICE_MODEL: "Choose Voice Engine",
-            Step.PERMISSIONS: "Enable Access",
-            Step.PLAYGROUND: "Try Fluentry",
-            Step.AI_ENHANCEMENT: "Set Up AI Enhancement",
+            Step.LANDING: tr("Welcome"),
+            Step.LANGUAGE: tr("Choose Language"),
+            Step.VOICE_MODEL: tr("Choose Voice Engine"),
+            Step.PERMISSIONS: tr("Enable Access"),
+            Step.PLAYGROUND: tr("Try Fluentry"),
+            Step.AI_ENHANCEMENT: tr("Set Up AI Enhancement"),
         }[self]
 
     @property
     def subtitle(self) -> str:
         return {
-            Step.LANDING: "Talk anywhere. Fluentry types for you.",
-            Step.LANGUAGE: "Pick the language you speak most.",
-            Step.VOICE_MODEL: "Choose the best local engine for your language.",
-            Step.PERMISSIONS: "Allow Fluentry to listen and type into other apps.",
-            Step.PLAYGROUND: "Use your dictation shortcut once before finishing setup.",
-            Step.AI_ENHANCEMENT: "Optional: Configure AI post-processing or skip this step.",
+            Step.LANDING: tr("Talk anywhere. Fluentry types for you."),
+            Step.LANGUAGE: tr("Pick the language you speak most."),
+            Step.VOICE_MODEL: tr("Choose the best local engine for your language."),
+            Step.PERMISSIONS: tr("Allow Fluentry to listen and type into other apps."),
+            Step.PLAYGROUND: tr("Use your dictation shortcut once before finishing setup."),
+            Step.AI_ENHANCEMENT: tr("Optional: Configure AI post-processing or skip this step."),
         }[self]
 
     @property
     def primary_button_title(self) -> str:
         if self is Step.LANDING:
-            return "Next"
+            return tr("Next")
         if self is Step.AI_ENHANCEMENT:
-            return "Finish Setup"
-        return "Continue"
+            return tr("Finish Setup")
+        return tr("Continue")
 
 
 LAST_STEP = Step.AI_ENHANCEMENT

@@ -22,6 +22,8 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from ..persistence.settings_types import OverlayPosition, OverlaySize
 
+from ..i18n import tr
+
 #: Bar count and window size for each overlay size.
 SIZE_METRICS = {
     OverlaySize.PILL: (14, QSize(190, 44)),
@@ -44,10 +46,10 @@ class OverlayMode(str, Enum):
     @property
     def caption(self) -> str:
         return {
-            OverlayMode.DICTATION: "Listening",
-            OverlayMode.COMMAND: "Command",
-            OverlayMode.REWRITE: "Edit",
-            OverlayMode.TRANSCRIBING: "Transcribing",
+            OverlayMode.DICTATION: tr("Listening"),
+            OverlayMode.COMMAND: tr("Command"),
+            OverlayMode.REWRITE: tr("Edit"),
+            OverlayMode.TRANSCRIBING: tr("Transcribing"),
         }[self]
 
 
@@ -191,7 +193,7 @@ class RecordingOverlay(QWidget):
 
         caption = self._mode.caption
         if self._countdown is not None:
-            caption = f"Sending in {self._countdown:.1f}s"
+            caption = tr("Sending in {seconds}s").format(seconds=f"{self._countdown:.1f}")
         font = QFont(self.font())
         font.setPointSizeF(max(9.0, self.height() * 0.16))
         font.setWeight(QFont.Weight.DemiBold)
