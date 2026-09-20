@@ -46,6 +46,9 @@ class OnboardingWindow(QWidget):
     _download_finished = Signal(str)
     #: Progress lines from the same worker thread.
     _download_progress_text = Signal(str)
+    #: Raised from the download thread when a freshly installed runtime
+    #: needs a fresh process to take effect.
+    _restart_needed = Signal()
     #: Dictation runs on worker threads; this hops its state to the GUI.
     _dictation_state = Signal(str)
 
@@ -64,6 +67,11 @@ class OnboardingWindow(QWidget):
         self._download_progress_text.connect(
             self._on_download_progress, Qt.ConnectionType.QueuedConnection
         )
+        #: Set by the application: relaunch the whole app in place.
+        self.on_request_restart = None
+        self._restart_needed.connect(
+            self._on_restart_needed, Qt.ConnectionType.QueuedConnection
+        )
         self._dictation_phase = "idle"
         self._dictation_state.connect(
             self._on_dictation_state, Qt.ConnectionType.QueuedConnection
@@ -80,7 +88,7 @@ class OnboardingWindow(QWidget):
         outer.setSpacing(0)
 
         self.header = HeaderBar("Welcome to Fluentry")
-        self._brand = brand_lockup(palette, height=22)
+        self._brand = brand_lockup(palette, height=26)  # 20% larger than the 22 used elsewhere
         if self._brand is not None:
             # The wordmark says the name better than a label does.
             self.header.title.setVisible(False)
@@ -526,7 +534,22 @@ class OnboardingWindow(QWidget):
             lambda error: self._download_finished.emit(error or ""),
             runtime=runtime,
             on_progress=lambda message: self._download_progress_text.emit(message),
+            on_restart_needed=lambda: self._restart_needed.emit(),
         )
+
+    def _on_restart_needed(self) -> None:
+        """The engine is installed; the app relaunches itself to use it.
+
+        The user asked to download an engine, not to restart the app, so it
+        does that itself rather than leaving a "please restart" note. The
+        wizard resumes after the relaunch, on a ready engine.
+        """
+        self._download_in_progress = False
+        self.model_status.setText("Setup complete — restarting Fluentry…")
+        self.download_progress.setVisible(False)
+        if self.on_request_restart is not None:
+            # A beat so the line above is readable before the window blinks.
+            QTimer.singleShot(900, self.on_request_restart)
 
     def _on_download_progress(self, message: str) -> None:
         self.model_status.setText(message)

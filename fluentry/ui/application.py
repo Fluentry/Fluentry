@@ -150,9 +150,38 @@ class FluentryApplication:
         self.state.shutdown()
         self.qt.quit()
 
+    def restart(self) -> None:
+        """Relaunch in a fresh process, in place.
+
+        A freshly installed speech runtime is a native extension, and Python
+        cannot swap one that is already loaded - so the app has to come up
+        again to use it. Rather than telling the user to do that, it does it
+        itself: os.execv replaces this process with a new one, which loads
+        the new runtime first thing in main(). Onboarding is persisted, so
+        the wizard resumes where it left off.
+        """
+        import os
+        import sys
+
+        # Tear down anything that holds a system resource the new process
+        # will want - above all the single-instance lock, which is an
+        # abstract socket the replacement would otherwise find still bound
+        # (fds survive execv) and mistake for another copy already running.
+        self._instance.release()
+        self.overlay.dismiss()
+        self._level_timer.stop()
+        if self.local_api is not None:
+            self.local_api.stop()
+        self.state.shutdown()
+
+        # Re-exec the same command. sys.argv[0] is the launcher; running it
+        # through the current interpreter reproduces how it was started.
+        os.execv(sys.executable, [sys.executable, sys.argv[0], *sys.argv[1:]])
+
     def show_onboarding(self) -> None:
         self.onboarding = OnboardingWindow(self.state, self.palette)
         self.onboarding.finished_onboarding.connect(self._finish_onboarding)
+        self.onboarding.on_request_restart = self.restart
         self.onboarding.show()
 
     def _finish_onboarding(self) -> None:

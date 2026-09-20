@@ -328,6 +328,7 @@ class AppState:
         completion: Callable[[str | None], None],
         runtime=None,
         on_progress: Callable[[str], None] | None = None,
+        on_restart_needed: Callable[[], None] | None = None,
     ) -> None:
         """Fetch the weights, and first the runtime if the engine needs one.
 
@@ -335,13 +336,19 @@ class AppState:
         missing cannot be made to work by downloading weights, so asking the
         user to perform two separate steps only invites them to do the
         useless one.
+
+        When a freshly installed runtime cannot take effect until the
+        process restarts, `on_restart_needed` is called instead of
+        `completion` if the caller provided it - so a caller that can
+        restart itself (the wizard) does, and one that cannot falls back to
+        telling the user through `completion`.
         """
 
-        def install_runtime(needed) -> str | None:
-            """Install a runtime and fetch weights; return a message or None.
+        def finish_install(needed) -> tuple[str, str] | None:
+            """Install a runtime and fetch weights.
 
-            A non-None return is the completion string - either a failure or
-            the "restart" notice when the build being replaced is already
+            Returns None on success, ("error", why) on failure, or
+            ("restart", message) when the build being replaced is already
             loaded and a native extension cannot be swapped in place.
             """
             from .services.runtime_installer import (
@@ -351,7 +358,7 @@ class AppState:
 
             failure = install(needed, on_progress=on_progress)
             if failure is not None:
-                return failure
+                return ("error", failure)
             if already_loaded_from_elsewhere(needed):
                 # Fetch the weights first - they need no runtime - so the
                 # restart lands on a ready engine rather than a second
@@ -363,17 +370,27 @@ class AppState:
                         on_progress(f"Downloading {model.display_name}…")
                     downloader()
                 return (
+                    "restart",
                     f"{needed.name} is installed and {model.display_name} is "
-                    "downloaded. Restart Fluentry to start using it."
+                    "downloaded. Restart Fluentry to start using it.",
                 )
             return None
+
+        def report(outcome) -> None:
+            """Route an install outcome to a restart, an error, or success."""
+            if outcome is None:
+                return True  # nothing to report; caller continues
+            kind, message = outcome
+            if kind == "restart" and on_restart_needed is not None:
+                on_restart_needed()
+            else:
+                completion(message)
+            return False  # handled; caller stops
 
         def work() -> None:
             try:
                 if runtime is not None:
-                    message = install_runtime(runtime)
-                    if message is not None:
-                        completion(message)
+                    if not report(finish_install(runtime)):
                         return
                 try:
                     provider = make_speech_provider(model)
@@ -389,8 +406,7 @@ class AppState:
                     if recovered is None:
                         completion(str(error))
                         return
-                    message = install_runtime(recovered)
-                    completion(message or str(error))
+                    report(finish_install(recovered) or ("error", str(error)))
                     return
                 if model == self.settings.selected_speech_model:
                     self.provider = provider

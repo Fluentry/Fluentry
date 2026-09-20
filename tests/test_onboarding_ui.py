@@ -238,7 +238,7 @@ def test_the_wizard_installs_the_runtime_not_just_the_weights(wizard, monkeypatc
 
     captured = {}
 
-    def fake_download_model(model, completion, runtime=None, on_progress=None):
+    def fake_download_model(model, completion, runtime=None, on_progress=None, on_restart_needed=None):
         captured["runtime"] = runtime
 
     monkeypatch.setattr(wizard._app, "download_model", fake_download_model)
@@ -261,3 +261,38 @@ def test_a_download_failure_is_shown_as_an_error(wizard):
     wizard._download_error = None
     wizard._on_download_finished("")
     assert wizard.model_status.objectName() == "Hint", "cleared once resolved"
+
+
+def test_the_wizard_restarts_itself_instead_of_asking(wizard, monkeypatch):
+    """You asked why the user should restart; they should not have to.
+
+    When a freshly installed runtime needs a fresh process, the wizard
+    relaunches the app itself rather than leaving a "please restart" note.
+    """
+    from fluentry.services import runtime_installer
+    from fluentry.services.runtime_installer import ONNX_ASR
+
+    monkeypatch.setattr(runtime_installer, "runtime_for", lambda model: ONNX_ASR)
+
+    restarted = []
+    wizard.on_request_restart = lambda: restarted.append(True)
+
+    # download_model calls on_restart_needed when a runtime swap needs a
+    # fresh process; the wizard hands it its own signal.
+    def fake_download_model(model, completion, runtime=None, on_progress=None, on_restart_needed=None):
+        assert runtime is ONNX_ASR, "the runtime is still installed, not skipped"
+        on_restart_needed()
+
+    monkeypatch.setattr(wizard._app, "download_model", fake_download_model)
+    wizard._download_model()
+
+    # The relaunch is deferred by a short timer so the status line is read.
+    import time
+    from PySide6.QtWidgets import QApplication
+
+    deadline = time.monotonic() + 3
+    while not restarted and time.monotonic() < deadline:
+        QApplication.processEvents()
+        time.sleep(0.05)
+    assert restarted == [True], "the wizard must relaunch the app itself"
+    assert "restart" in wizard.model_status.text().lower()
