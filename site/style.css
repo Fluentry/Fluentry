@@ -519,3 +519,26 @@ footer .sep { margin-left: auto; }
 
 /* A quieter sub-line inside a table cell, for a parenthetical. */
 .muted-note { color: var(--text-faint); font-size: 0.82em; }
+
+/* --- ambient sound-field ------------------------------------------------- */
+/* A voice app deserves a background that moves like sound. The canvas is
+   painted just above the page's base colour and below every band of
+   content, so the waves show through the transparent gaps (richest behind
+   the hero) while cards and the sticky bar keep their own opaque
+   backgrounds and stay perfectly legible. */
+#fx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  /* Fades the field out toward the foot of the viewport so long-form text
+     lower down is never competing with motion. */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 92%);
+          mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 92%);
+  opacity: 0.9;
+  transition: opacity 0.6s var(--ease);
+}
+#main, footer { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { #fx { opacity: 0.7; } }

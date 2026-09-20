@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<canvas id="fx" aria-hidden="true"></canvas>
 
 <a class="skip" href="#main">Skip to content</a>
 
@@ -407,5 +408,148 @@
 </footer>
 
 <script src="app.js" defer></script>
+
+<script>
+/* Ambient sound-wave field — a nod to what Fluentry does: turn speech into
+   text. Layered sine bands drift across the viewport in the brand accent,
+   and the pointer (or a tap) sends a soft ripple of amplitude through them.
+   Dependency-free, DPR-capped, paused when the tab is hidden, and reduced
+   to a single still frame when the visitor prefers less motion. */
+(function () {
+  var canvas = document.getElementById("fx");
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext("2d");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function readColors() {
+    var css = getComputedStyle(document.documentElement);
+    var accent = (css.getPropertyValue("--accent") || "#f44b18").trim();
+    var soft = (css.getPropertyValue("--accent-soft") || "#ff6a3d").trim();
+    var light = window.matchMedia("(prefers-color-scheme: light)").matches;
+    return { accent: accent, soft: soft, light: light };
+  }
+  var colors = readColors();
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var w = 0, h = 0;
+  function resize() {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener("resize", resize, { passive: true });
+
+  // Each band is one flowing line, summed from two sines so it never looks
+  // like a clean textbook wave. Placed across the upper two-thirds, where
+  // the field is most visible.
+  var BANDS = 7;
+  var bands = [];
+  for (var i = 0; i < BANDS; i++) {
+    var t = i / (BANDS - 1);
+    bands.push({
+      y: 0.08 + t * 0.62,           // vertical position, fraction of height
+      amp: 26 + Math.random() * 26, // base amplitude in px
+      len: 0.7 + Math.random() * 0.9,
+      len2: 1.7 + Math.random() * 1.4,
+      speed: 0.15 + Math.random() * 0.22,
+      phase: Math.random() * Math.PI * 2,
+      phase2: Math.random() * Math.PI * 2,
+      width: 1.1 + (1 - t) * 1.4,
+      alpha: 0.10 + (1 - t) * 0.12
+    });
+  }
+
+  // Pointer ripple: a travelling bump of excitement that eases toward the
+  // cursor and decays on its own, so the field also breathes when idle.
+  var pointer = { x: 0.5, y: 0.4, strength: 0, tx: 0.5, ty: 0.4 };
+  function moveTo(cx, cy) {
+    pointer.tx = cx / w;
+    pointer.ty = cy / h;
+    pointer.strength = Math.min(1, pointer.strength + 0.35);
+  }
+  window.addEventListener("mousemove", function (e) { moveTo(e.clientX, e.clientY); }, { passive: true });
+  window.addEventListener("touchmove", function (e) {
+    if (e.touches && e.touches[0]) moveTo(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+
+  window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () {
+    colors = readColors();
+  });
+
+  function hexToRgb(hex) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) hex = hex.split("").map(function (c) { return c + c; }).join("");
+    var n = parseInt(hex, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  function draw(time) {
+    ctx.clearRect(0, 0, w, h);
+    var accent = hexToRgb(colors.accent);
+    var soft = hexToRgb(colors.soft);
+
+    pointer.x += (pointer.tx - pointer.x) * 0.06;
+    pointer.y += (pointer.ty - pointer.y) * 0.06;
+    pointer.strength *= 0.96;
+
+    var step = w < 640 ? 14 : 9;
+    ctx.globalCompositeOperation = colors.light ? "multiply" : "screen";
+
+    for (var b = 0; b < bands.length; b++) {
+      var band = bands[b];
+      var baseY = band.y * h;
+      var grad = ctx.createLinearGradient(0, 0, w, 0);
+      var mix = b / (bands.length - 1);
+      var r = Math.round(accent[0] + (soft[0] - accent[0]) * mix);
+      var g = Math.round(accent[1] + (soft[1] - accent[1]) * mix);
+      var bl = Math.round(accent[2] + (soft[2] - accent[2]) * mix);
+      var a = band.alpha * (colors.light ? 0.8 : 1);
+      grad.addColorStop(0, "rgba(" + r + "," + g + "," + bl + ",0)");
+      grad.addColorStop(0.5, "rgba(" + r + "," + g + "," + bl + "," + a + ")");
+      grad.addColorStop(1, "rgba(" + r + "," + g + "," + bl + ",0)");
+
+      ctx.beginPath();
+      for (var x = 0; x <= w; x += step) {
+        var fx = x / w;
+        var y = baseY
+          + Math.sin(fx * Math.PI * 2 * band.len + time * band.speed + band.phase) * band.amp
+          + Math.sin(fx * Math.PI * 2 * band.len2 - time * band.speed * 0.7 + band.phase2) * band.amp * 0.5;
+        // Pointer ripple: a gaussian bump around the cursor lifts the wave.
+        var d = fx - pointer.x;
+        var bump = Math.exp(-(d * d) / 0.012) * pointer.strength * 46
+                 * Math.exp(-Math.pow(band.y - pointer.y, 2) / 0.25);
+        y -= bump;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = band.width;
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  if (reduce) {
+    draw(1200);            // one calm still frame, no animation loop
+    return;
+  }
+
+  var running = true, start = performance.now();
+  function frame(now) {
+    if (!running) return;
+    draw((now - start) / 1000);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { running = false; }
+    else if (!running) { running = true; start = performance.now(); requestAnimationFrame(frame); }
+  });
+})();
+</script>
+
 </body>
 </html>
