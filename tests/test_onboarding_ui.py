@@ -220,3 +220,44 @@ def test_transcribing_does_not_collapse_back_to_the_placeholder(wizard):
     assert wizard.playground_result.text() != "Your words will appear here.", (
         "a failure must not be reported as an empty page"
     )
+
+
+def test_the_wizard_installs_the_runtime_not_just_the_weights(wizard, monkeypatch):
+    """The bug: the wizard downloaded weights and left the runtime alone.
+
+    On Ubuntu the system onnxruntime loads the model and transcribes
+    nothing, so the weights are useless without a working runtime - yet the
+    wizard reached "Try Fluentry" having installed only the weights, and
+    every dictation there was refused for want of a runtime.
+    """
+    from fluentry.services import runtime_installer
+    from fluentry.services.runtime_installer import ONNX_ASR
+
+    # A machine whose system runtime has been judged faulty.
+    monkeypatch.setattr(runtime_installer, "runtime_for", lambda model: ONNX_ASR)
+
+    captured = {}
+
+    def fake_download_model(model, completion, runtime=None, on_progress=None):
+        captured["runtime"] = runtime
+
+    monkeypatch.setattr(wizard._app, "download_model", fake_download_model)
+    wizard._download_model()
+    assert captured["runtime"] is ONNX_ASR, (
+        "the wizard must install the runtime, not only the weights"
+    )
+
+
+def test_a_download_failure_is_shown_as_an_error(wizard):
+    """A runtime that cannot be installed has to say so, visibly.
+
+    It used to be swallowed - the step just sat there - so the user was
+    told nothing and assumed the app was broken.
+    """
+    wizard._on_download_finished("Could not install onnx-asr: no network.")
+    assert "no network" in wizard.model_status.text()
+    assert wizard.model_status.objectName() == "Error", "shown in the danger colour"
+
+    wizard._download_error = None
+    wizard._on_download_finished("")
+    assert wizard.model_status.objectName() == "Hint", "cleared once resolved"

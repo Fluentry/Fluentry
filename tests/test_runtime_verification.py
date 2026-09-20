@@ -205,3 +205,56 @@ def test_no_restart_needed_when_nothing_was_loaded_yet(monkeypatch, tmp_path):
     finally:
         sys.modules.clear()
         sys.modules.update(before)
+
+
+def test_download_fetches_weights_before_asking_for_a_restart(monkeypatch, settings):
+    """Otherwise the user restarts to a still-empty engine.
+
+    When the broken runtime is already loaded the swap needs a restart, but
+    the weights need no runtime - so they are fetched first, and the
+    restart lands on a ready engine instead of a second download.
+    """
+    from fluentry import app as app_module
+    from fluentry.app import AppState
+    from fluentry.persistence.history_store import TranscriptionHistoryStore
+    from fluentry.persistence.speech_model import SpeechModel
+    from fluentry.services import runtime_installer
+    from fluentry.services.runtime_installer import ONNX_ASR
+
+    state = AppState(
+        settings=settings,
+        history=TranscriptionHistoryStore(load=False),
+        start_services=False,
+    )
+
+    calls = []
+    monkeypatch.setattr(runtime_installer, "install", lambda rt, on_progress=None: calls.append("install") or None)
+    monkeypatch.setattr(runtime_installer, "already_loaded_from_elsewhere", lambda rt: True)
+
+    class FakeProvider:
+        def download(self):
+            calls.append("download-weights")
+
+        def prepare(self):
+            calls.append("prepare")  # must NOT happen: runtime not swappable yet
+
+    monkeypatch.setattr(app_module, "make_speech_provider", lambda model: FakeProvider())
+
+    results = []
+    done = threading.Event()
+
+    def completion(error):
+        results.append(error)
+        done.set()
+
+    state.download_model(
+        SpeechModel.default_model(), completion, runtime=ONNX_ASR
+    )
+    assert done.wait(10), "download_model never finished"
+
+    assert calls == ["install", "download-weights"], calls
+    assert "prepare" not in calls, "must not load the runtime it just replaced"
+    assert results and "Restart" in results[0]
+
+
+import threading  # noqa: E402  (used above; kept close to its one user)

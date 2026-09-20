@@ -309,6 +309,7 @@ def stylesheet(palette: Palette) -> str:
     QLabel#RowTitle {{ font-size: {section_size}; font-weight: 700; }}
     QLabel#Metric {{ font-size: {metric_size}; font-weight: 700; color: {palette.accent}; }}
     QLabel#Hint {{ color: {palette.secondary_text}; font-size: {hint_size}; }}
+    QLabel#Error {{ color: {palette.danger}; font-size: {hint_size}; }}
 
     /* Adwaita header bar: flat, separated by a hairline, never a gradient. */
     QWidget#HeaderBar {{

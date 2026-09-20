@@ -44,6 +44,8 @@ class OnboardingWindow(QWidget):
     #: Carries a download result back from its worker thread. Qt widgets
     #: may only be touched on the GUI thread.
     _download_finished = Signal(str)
+    #: Progress lines from the same worker thread.
+    _download_progress_text = Signal(str)
     #: Dictation runs on worker threads; this hops its state to the GUI.
     _dictation_state = Signal(str)
 
@@ -58,6 +60,9 @@ class OnboardingWindow(QWidget):
         self._download_error: str | None = None
         self._download_finished.connect(
             self._on_download_finished, Qt.ConnectionType.QueuedConnection
+        )
+        self._download_progress_text.connect(
+            self._on_download_progress, Qt.ConnectionType.QueuedConnection
         )
         self._dictation_phase = "idle"
         self._dictation_state.connect(
@@ -466,6 +471,10 @@ class OnboardingWindow(QWidget):
         ready = self._app.model_is_ready(model)
         installable = engine_is_installable(model)
 
+        # A failure is shown in the danger colour, not as another grey hint
+        # the eye slides over - a runtime that could not be installed is the
+        # one thing on this step the user has to act on.
+        self._set_status_is_error(bool(self._download_error) and not self._download_in_progress)
         if self._download_in_progress:
             self.model_status.setText(f"Downloading {model.display_name}…")
         elif self._download_error:
@@ -487,14 +496,40 @@ class OnboardingWindow(QWidget):
         self.download_progress.setVisible(self._download_in_progress)
         self._refresh_footer()
 
+    def _set_status_is_error(self, is_error: bool) -> None:
+        name = "Error" if is_error else "Hint"
+        if self.model_status.objectName() == name:
+            return
+        self.model_status.setObjectName(name)
+        # Qt only re-reads the stylesheet after the object name changes if
+        # the widget is unpolished and polished again.
+        self.model_status.style().unpolish(self.model_status)
+        self.model_status.style().polish(self.model_status)
+
     def _download_model(self) -> None:
+        from ..services.runtime_installer import runtime_for
+
         model = self._app.settings.selected_speech_model
+        # The engine needs its runtime as well as its weights. The system
+        # one may be missing, or - on Ubuntu - present but unable to
+        # transcribe; either way this fetches a working copy first. Without
+        # it the wizard downloaded the weights, reached "Try Fluentry", and
+        # every dictation was refused for want of a runtime nobody installed.
+        runtime = runtime_for(model)
         self._download_in_progress = True
         self._download_error = None
         self._refresh_model_status()
         # `download_model` calls back on a worker thread; the signal hops it
         # over to the GUI thread before any widget is touched.
-        self._app.download_model(model, lambda error: self._download_finished.emit(error or ""))
+        self._app.download_model(
+            model,
+            lambda error: self._download_finished.emit(error or ""),
+            runtime=runtime,
+            on_progress=lambda message: self._download_progress_text.emit(message),
+        )
+
+    def _on_download_progress(self, message: str) -> None:
+        self.model_status.setText(message)
 
     def _on_download_finished(self, error: str) -> None:
         self._download_in_progress = False

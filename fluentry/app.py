@@ -337,36 +337,66 @@ class AppState:
         useless one.
         """
 
+        def install_runtime(needed) -> str | None:
+            """Install a runtime and fetch weights; return a message or None.
+
+            A non-None return is the completion string - either a failure or
+            the "restart" notice when the build being replaced is already
+            loaded and a native extension cannot be swapped in place.
+            """
+            from .services.runtime_installer import (
+                already_loaded_from_elsewhere,
+                install,
+            )
+
+            failure = install(needed, on_progress=on_progress)
+            if failure is not None:
+                return failure
+            if already_loaded_from_elsewhere(needed):
+                # Fetch the weights first - they need no runtime - so the
+                # restart lands on a ready engine rather than a second
+                # download.
+                provider = make_speech_provider(model)
+                downloader = getattr(provider, "download", None)
+                if callable(downloader):
+                    if on_progress is not None:
+                        on_progress(f"Downloading {model.display_name}…")
+                    downloader()
+                return (
+                    f"{needed.name} is installed and {model.display_name} is "
+                    "downloaded. Restart Fluentry to start using it."
+                )
+            return None
+
         def work() -> None:
             try:
                 if runtime is not None:
-                    from .services.runtime_installer import (
-                        already_loaded_from_elsewhere,
-                        install,
-                    )
+                    message = install_runtime(runtime)
+                    if message is not None:
+                        completion(message)
+                        return
+                try:
+                    provider = make_speech_provider(model)
+                    provider.prepare()
+                except TranscriptionProviderError as error:
+                    # A faulty runtime only reveals itself when it is tried,
+                    # and that trial is this download. The verdict is cached
+                    # now, so ask again what to install and recover in one
+                    # go rather than sending the user back to click twice.
+                    from .services.runtime_installer import runtime_for
 
-                    failure = install(runtime, on_progress=on_progress)
-                    if failure is not None:
-                        completion(failure)
+                    recovered = runtime_for(model) if runtime is None else None
+                    if recovered is None:
+                        completion(str(error))
                         return
-                    if already_loaded_from_elsewhere(runtime):
-                        # The build it replaces is already imported in this
-                        # process and a native extension cannot be swapped
-                        # in place. It is installed and will be used on the
-                        # next launch; forcing the provider now would load
-                        # the faulty one again.
-                        completion(
-                            f"{runtime.name} is installed. Restart Fluentry "
-                            "to start using it."
-                        )
-                        return
-                provider = make_speech_provider(model)
-                provider.prepare()
+                    message = install_runtime(recovered)
+                    completion(message or str(error))
+                    return
                 if model == self.settings.selected_speech_model:
                     self.provider = provider
                     self.asr.provider = provider
                 completion(None)
-            except (TranscriptionProviderError, ModelDownloadError, OSError) as error:
+            except (ModelDownloadError, OSError) as error:
                 completion(str(error))
             except Exception as error:
                 completion(str(error))
