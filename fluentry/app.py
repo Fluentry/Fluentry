@@ -787,8 +787,10 @@ class AppState:
         # extension; say plainly whether it is live or still needs a
         # one-time re-login, rather than letting terminals silently
         # paste with the wrong shortcut.
-        from .platform.gnome_extension import TerminalSupport, status as terminal_status
-        support = terminal_status()
+        # Use the status settled at startup rather than re-probing gdbus on
+        # every readiness refresh (this is called on a UI timer).
+        from .platform.gnome_extension import TerminalSupport
+        support = self.terminal_support
         if support is TerminalSupport.ACTIVE:
             items.append(ReadinessItem(
                 "Terminal paste", True,
