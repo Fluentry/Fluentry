@@ -187,19 +187,23 @@ class OnboardingWindow(QWidget):
         self._route_buttons = QButtonGroup(page)
         self._route_container = QVBoxLayout()
         self.route_card.add_row_layout(self._route_container)
-        layout.addWidget(self.route_card)
 
+        # Size, action and progress live inside the card with the list they
+        # act on. They used to float in the page below it, so the primary
+        # button of the whole step sat orphaned in empty space.
         self.model_status = hint_label("")
-        layout.addWidget(self.model_status)
+        self.route_card.add(self.model_status)
         self.download_button = primary_button("Download", self._download_model)
-        layout.addWidget(self.download_button, 0, Qt.AlignmentFlag.AlignLeft)
+        self.route_card.add_actions(self.download_button)
         # Hundreds of megabytes with no sign of movement reads as a freeze.
         self.download_progress = QProgressBar()
         self.download_progress.setTextVisible(False)
         self.download_progress.setRange(0, 0)
         self.download_progress.setMaximumHeight(6)
-        layout.addWidget(self.download_progress)
+        self.route_card.add(self.download_progress)
         self.download_progress.setVisible(False)
+
+        layout.addWidget(self.route_card)
         layout.addStretch(1)
         return page
 
