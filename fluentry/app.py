@@ -207,17 +207,25 @@ class AppState:
         self._start_analytics()
 
     def shutdown(self) -> None:
-        self.hotkeys.stop()
-        if self.media is not None:
-            self.media.shutdown()
-        if self.capture is not None:
+        import time
+
+        def step(name, fn):
+            begin = time.monotonic()
             try:
-                self.capture.stop()
-            except Exception:
-                pass
+                fn()
+            except Exception as error:
+                _log.warning("shutdown step %s failed: %s", name, error)
+            finally:
+                _log.info("shutdown step %s: %.3fs", name, time.monotonic() - begin)
+
+        step("hotkeys.stop", self.hotkeys.stop)
+        if self.media is not None:
+            step("media.shutdown", self.media.shutdown)
+        if self.capture is not None:
+            step("capture.stop", self.capture.stop)
         if self.analytics is not None:
-            self.analytics.close()
-        self.history.finish_pending_writes()
+            step("analytics.close", self.analytics.close)
+        step("history.finish_pending_writes", self.history.finish_pending_writes)
 
     def add_state_observer(self, callback: Callable[[str], None]) -> None:
         self._state_observers.append(callback)

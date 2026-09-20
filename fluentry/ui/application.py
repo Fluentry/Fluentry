@@ -12,6 +12,9 @@ from the GUI thread.
 from __future__ import annotations
 
 import sys
+import time
+
+from ..logging_setup import get_logger
 
 from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtWidgets import QApplication, QMessageBox
@@ -29,6 +32,9 @@ from .settings_window import SettingsWindow
 from .single_instance import SingleInstance
 from .theme import apply_system_font, palette_for, stylesheet
 from .tray import TrayActions, TrayController
+
+
+_log = get_logger("app")
 
 
 def _apply_language(app: QApplication, preferred: str) -> None:
@@ -154,12 +160,22 @@ class FluentryApplication:
         self.local_api = server
 
     def quit(self) -> None:
-        self._instance.release()
-        self.overlay.dismiss()
-        self._level_timer.stop()
+        start = time.monotonic()
+
+        def step(name, fn):
+            begin = time.monotonic()
+            try:
+                fn()
+            finally:
+                _log.info("quit step %s: %.3fs", name, time.monotonic() - begin)
+
+        step("instance.release", self._instance.release)
+        step("overlay.dismiss", self.overlay.dismiss)
+        step("level_timer.stop", self._level_timer.stop)
         if self.local_api is not None:
-            self.local_api.stop()
-        self.state.shutdown()
+            step("local_api.stop", self.local_api.stop)
+        step("state.shutdown", self.state.shutdown)
+        _log.info("quit: teardown done in %.3fs, ending the event loop", time.monotonic() - start)
         self.qt.quit()
 
     def restart(self) -> None:
