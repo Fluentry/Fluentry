@@ -209,6 +209,9 @@ be set before Qt starts.
 The website lives in [`site/`](site/); publishing copies it to the
 [fluentry.github.io](https://github.com/Fluentry/fluentry.github.io) repository.
 
+## Acknowledgments
+This project was heavily inspired by [FluidVoice](https://github.com/altic-dev/FluidVoice). We thank them for doing the heavy lifting.
+
 ## Licence
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
