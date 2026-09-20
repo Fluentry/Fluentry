@@ -565,3 +565,16 @@ def test_visualizer_noise_threshold_defaults_and_clamps(settings):
     settings.visualizer_noise_threshold = -1.0
     # Zero reads back as "unset", which is the documented 0.4 default.
     assert settings.visualizer_noise_threshold == pytest.approx(0.4)
+
+
+def test_hotkey_mode_defaults_to_automatic(settings):
+    """Hold-to-talk should work out of the box.
+
+    A pure toggle default surprised people who held the key expecting it to
+    record while held and stop on release. Automatic gives them that - a
+    held key is push-to-talk - while a tap still toggles.
+    """
+    from fluentry.persistence.settings_store import HotkeyActivationMode
+
+    # Nothing set: the fresh-install default.
+    assert settings.hotkey_mode == HotkeyActivationMode.AUTOMATIC

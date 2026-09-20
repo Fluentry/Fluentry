@@ -807,11 +807,13 @@ class SettingsStore:
         raw = self.defaults.string(Keys.hotkey_mode)
         if raw in HotkeyActivationMode.ALL:
             return raw
-        return (
-            HotkeyActivationMode.HOLD
-            if self.defaults.bool(Keys.press_and_hold_mode)
-            else HotkeyActivationMode.TOGGLE
-        )
+        if self.defaults.bool(Keys.press_and_hold_mode):
+            return HotkeyActivationMode.HOLD
+        # Automatic by default: a tap toggles and a held key is
+        # push-to-talk, so "hold and speak, release to stop" works out of
+        # the box without the user having to discover the setting. Pure
+        # toggle surprised people who expected the key to behave like one.
+        return HotkeyActivationMode.AUTOMATIC
 
     @hotkey_mode.setter
     def hotkey_mode(self, value: str) -> None:
