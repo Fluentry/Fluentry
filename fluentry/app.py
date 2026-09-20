@@ -68,6 +68,10 @@ from .services.text_pipeline import PipelineContext, TextPipeline
 from .services.vocabulary_store import VocabularyStore
 
 APP_VERSION = "1.0.1"
+
+from .logging_setup import get_logger
+
+_log = get_logger("app")
 APP_ID = "dev.fluentry.Fluentry"
 
 DEFAULT_DICTATION_PROMPT = (
@@ -169,6 +173,9 @@ class AppState:
         self._notice_observers: list[Callable[[str, str], None]] = []
         self.tray_is_visible = False
         self.last_error: str | None = None
+        #: GNOME terminal-support state, refreshed in start().
+        from .platform.gnome_extension import TerminalSupport
+        self.terminal_support = TerminalSupport.NOT_NEEDED
 
         if start_services:
             self.start()
@@ -181,6 +188,16 @@ class AppState:
         from .services.runtime_installer import activate_installed_runtimes
 
         activate_installed_runtimes()
+        # Enable our GNOME Shell extension if the desktop needs it, so
+        # terminals get the right paste shortcut. This may leave a
+        # one-time "log out and back in" step, which readiness_report
+        # surfaces honestly rather than pretending it is done.
+        try:
+            from .platform.gnome_extension import ensure_enabled
+            self.terminal_support = ensure_enabled()
+            _log.info("terminal support: %s", self.terminal_support.value)
+        except Exception:
+            pass
         self.prune_expired_history()
         self.paste_key.start()
         self.microphones.migrate_microphone_priority_if_needed()
@@ -757,6 +774,24 @@ class AppState:
         else:
             hotkey_ok, hotkey_detail = False, "No hotkey backend is available."
         items.append(ReadinessItem("Global hotkey", hotkey_ok, hotkey_detail))
+
+        # On GNOME, typing into terminals depends on the Fluentry Focus
+        # extension; say plainly whether it is live or still needs a
+        # one-time re-login, rather than letting terminals silently
+        # paste with the wrong shortcut.
+        from .platform.gnome_extension import TerminalSupport, status as terminal_status
+        support = terminal_status()
+        if support is TerminalSupport.ACTIVE:
+            items.append(ReadinessItem(
+                "Terminal paste", True,
+                "Terminals receive Ctrl+Shift+V through the Fluentry Focus extension.",
+            ))
+        elif support is TerminalSupport.NEEDS_RELOGIN:
+            items.append(ReadinessItem(
+                "Terminal paste", False,
+                "Log out and back in once to finish enabling terminal support "
+                "(GNOME loads the Fluentry Focus extension only at login).",
+            ))
 
         return [(item.label, item.ok, item.detail) for item in items]
 

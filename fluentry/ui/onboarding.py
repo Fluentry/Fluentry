@@ -227,11 +227,9 @@ class OnboardingWindow(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         self.permissions_card = Card(tr("Access"), tr("What Fluentry needs from your system to dictate."))
+        # Rows are created on demand to match the readiness report, which is
+        # one longer on GNOME (the terminal-support line).
         self.permissions_labels: list[QLabel] = []
-        for _ in range(4):
-            label = hint_label("")
-            self.permissions_card.add(label)
-            self.permissions_labels.append(label)
         layout.addWidget(self.permissions_card)
         layout.addWidget(button(tr("Re-check"), self._refresh_permissions), 0, Qt.AlignmentFlag.AlignLeft)
         layout.addStretch(1)
@@ -576,10 +574,18 @@ class OnboardingWindow(QWidget):
         self._refresh_model_status()
 
     def _refresh_permissions(self) -> None:
-        for label, (name, ok, detail) in zip(
-            self.permissions_labels, self._app.readiness_report()
-        ):
-            label.setText(f"{'✓' if ok else '•'}  {tr(name)}: {tr(detail)}")
+        report = self._app.readiness_report()
+        while len(self.permissions_labels) < len(report):
+            label = hint_label("")
+            self.permissions_card.add(label)
+            self.permissions_labels.append(label)
+        for index, label in enumerate(self.permissions_labels):
+            if index < len(report):
+                name, ok, detail = report[index]
+                label.setText(f"{'✓' if ok else '•'}  {tr(name)}: {tr(detail)}")
+                label.setVisible(True)
+            else:
+                label.setVisible(False)
         self._refresh_footer()
 
     def _refresh_playground(self) -> None:
