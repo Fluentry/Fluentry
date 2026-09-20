@@ -1005,3 +1005,43 @@ def test_a_download_shows_that_something_is_happening(qt_app, app_state, monkeyp
     started["completion"]("")
     qt_app.processEvents()
     assert not engine.download_progress.isVisibleTo(engine), "and it stops when finished"
+
+
+# --- AI enhancement dependent controls --------------------------------------
+
+
+def test_ai_dependent_controls_follow_the_master_toggle(qt_app, app_state):
+    """Streaming, provider and prompt do nothing while cleanup is off.
+
+    They used to stay fully live - "Stream the response" showing on while
+    "Enhance dictations with AI" was off invited the obvious question of
+    why.
+    """
+    from fluentry.ui.pages import AIEnhancementPage
+
+    app_state.settings.enable_ai_processing = False
+    page = AIEnhancementPage(app_state)
+    page.refresh()
+    assert not page.stream_toggle.isEnabled()
+    assert not page.provider_card.isEnabled()
+    assert not page.prompt_card.isEnabled()
+
+    page.enable_toggle.set_checked(True)
+    page._set_enabled(True)
+    assert page.stream_toggle.isEnabled()
+    assert page.provider_card.isEnabled()
+    assert page.prompt_card.isEnabled()
+
+
+def test_a_lone_action_button_is_not_stretched_full_width(qt_app, app_state):
+    """add_actions keeps a button its natural size, unlike add_row.
+
+    A full-width orange Download slab was the reported eyesore on the Voice
+    Engine screen.
+    """
+    from fluentry.ui.pages import VoiceEnginePage
+
+    page = VoiceEnginePage(app_state)
+    page.show()
+    qt_app.processEvents()
+    assert page.download_button.width() < page.model_card.width() - 100

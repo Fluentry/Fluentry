@@ -156,6 +156,24 @@ class Card(QFrame):
         self._layout.addWidget(row)
         return row
 
+    def add_actions(self, *widgets: QWidget) -> QWidget:
+        """A row of buttons at their natural width, aligned to the left.
+
+        `add_row` shares the full width between its widgets, which turns a
+        lone button into a slab and three buttons into three slabs. Actions
+        should be the size of their labels; the trailing stretch keeps them
+        that way.
+        """
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        for widget in widgets:
+            layout.addWidget(widget)
+        layout.addStretch(1)
+        self._layout.addWidget(row)
+        return row
+
     def add_labelled(self, text: str, widget: QWidget, hint: str | None = None) -> QWidget:
         row = QWidget()
         layout = QHBoxLayout(row)
@@ -193,6 +211,15 @@ class MetricTile(QFrame):
 
     def set_value(self, value: str) -> None:
         self.value_label.setText(value)
+
+
+def _blend(a: QColor, b: QColor, t: float) -> QColor:
+    """`a` mixed toward `b` by fraction `t` (0.0 keeps a, 1.0 becomes b)."""
+    return QColor(
+        round(a.red() * (1 - t) + b.red() * t),
+        round(a.green() * (1 - t) + b.green() * t),
+        round(a.blue() * (1 - t) + b.blue() * t),
+    )
 
 
 class Switch(QAbstractButton):
@@ -234,6 +261,15 @@ class Switch(QAbstractButton):
             accent = QColor(self._palette.accent)
             track_off = QColor(self._palette.surface_raised)
             knob = QColor("#ffffff" if self.isChecked() else self._palette.text)
+
+        # A disabled switch that keeps painting bright accent reads as a
+        # live control, which is how "Stream the response" looked switched
+        # on while AI cleanup - the thing it belongs to - was off.
+        if not self.isEnabled():
+            track = accent if self.isChecked() else track_off
+            accent = _blend(track, scheme.window().color(), 0.55)
+            track_off = accent
+            knob = _blend(knob, scheme.window().color(), 0.45)
 
         radius = self.TRACK_HEIGHT / 2
         painter.setPen(Qt.PenStyle.NoPen)

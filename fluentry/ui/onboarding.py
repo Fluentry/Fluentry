@@ -206,7 +206,7 @@ class OnboardingWindow(QWidget):
     def _build_permissions(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        self.permissions_card = Card("Access", "Fluentry needs two things from the system.")
+        self.permissions_card = Card("Access", "What Fluentry needs from your system to dictate.")
         self.permissions_labels: list[QLabel] = []
         for _ in range(4):
             label = hint_label("")

@@ -192,9 +192,10 @@ class VoiceEnginePage(Page):
         self.model_detail = hint_label("")
         self.model_card.add(self.model_detail)
         self.download_button = primary_button("Download model", self._download)
-        self.model_card.add_row(self.download_button)
         self.download_status = hint_label("")
-        self.model_card.add(self.download_status)
+        # Button at its natural width with the status beside it, rather than
+        # a full-width slab. The download is one action, not a banner.
+        self.model_card.add_actions(self.download_button, self.download_status)
         # A model is hundreds of megabytes and a runtime can be more. With
         # only a label, a slow connection is indistinguishable from a hang.
         self.download_progress = QProgressBar()
@@ -224,7 +225,7 @@ class VoiceEnginePage(Page):
         self.microphone_list = QListWidget()
         self.microphone_list.setMaximumHeight(160)
         self.microphone_card.add(self.microphone_list)
-        self.microphone_card.add_row(
+        self.microphone_card.add_actions(
             button("Move up", lambda: self._move_microphone(-1)),
             button("Move down", lambda: self._move_microphone(1)),
             button("Refresh", self.refresh),
@@ -425,8 +426,9 @@ class AIEnhancementPage(Page):
         self.key_storage_hint = hint_label("")
         self.provider_card.add(self.key_storage_hint)
         self.verify_status = hint_label("")
-        self.provider_card.add_row(button("Test connection", self._verify))
-        self.provider_card.add(self.verify_status)
+        self.provider_card.add_actions(
+            button("Test connection", self._verify), self.verify_status
+        )
         layout.addWidget(self.provider_card)
 
         self.prompt_card = Card(
@@ -463,9 +465,22 @@ class AIEnhancementPage(Page):
         override = settings.default_dictation_prompt_override
         if override is not None and override != self.prompt_editor.toPlainText():
             self.prompt_editor.setPlainText(override)
+        self._reflect_enabled(settings.enable_ai_processing)
+
+    def _reflect_enabled(self, enabled: bool) -> None:
+        """Grey out everything that only matters once AI cleanup is on.
+
+        Streaming, the provider and the prompt do nothing while the feature
+        is off; showing them fully live invited the reasonable question of
+        why "Stream the response" was on when nothing was being enhanced.
+        """
+        self.stream_toggle.setEnabled(enabled)
+        self.provider_card.setEnabled(enabled)
+        self.prompt_card.setEnabled(enabled)
 
     def _set_enabled(self, value: bool) -> None:
         self._app.settings.enable_ai_processing = value
+        self._reflect_enabled(value)
 
     def _set_streaming(self, value: bool) -> None:
         self._app.settings.enable_ai_streaming = value
