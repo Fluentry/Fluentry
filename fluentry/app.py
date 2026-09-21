@@ -613,6 +613,9 @@ class AppState:
         self.settings.overlay_bottom_offset = offset
         self._notify_state("overlay")
 
+    def launch_at_startup_enabled(self) -> bool:
+        return autostart_is_enabled()
+
     def set_launch_at_startup(self, enabled: bool) -> None:
         self.settings.launch_at_startup = enabled
         write_autostart_entry(enabled)
@@ -934,11 +937,59 @@ def autostart_path() -> Path:
     return Path(base) / "autostart" / "fluentry.desktop"
 
 
+#: A user file with the same basename overrides the packaged system entry,
+#: and Hidden=true is how the XDG autostart spec spells "do not start this".
+HIDDEN_AUTOSTART_ENTRY = """[Desktop Entry]
+Type=Application
+Name=Fluentry
+Hidden=true
+"""
+
+
+def system_autostart_entry_exists() -> bool:
+    """The .deb ships an entry under /etc/xdg/autostart for every user."""
+    import os
+
+    dirs = os.environ.get("XDG_CONFIG_DIRS") or "/etc/xdg"
+    return any(
+        (Path(d) / "autostart" / "fluentry.desktop").is_file()
+        for d in dirs.split(":")
+        if d
+    )
+
+
+def autostart_is_enabled() -> bool:
+    """What the desktop will actually do at the next login.
+
+    The user's file wins when present; otherwise the packaged system entry
+    decides. Read from disk rather than a stored setting so the toggle stays
+    truthful on a fresh install, where the package enables autostart before
+    the app has ever run.
+    """
+    path = autostart_path()
+    if path.is_file():
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return True
+        return not any(
+            line.split("=", 1)[0].strip().lower() == "hidden"
+            and line.split("=", 1)[1].strip().lower() == "true"
+            for line in lines
+            if "=" in line
+        )
+    return system_autostart_entry_exists()
+
+
 def write_autostart_entry(enabled: bool) -> None:
     """Where the desktop looks for programs to start at login."""
     path = autostart_path()
     if not enabled:
-        path.unlink(missing_ok=True)
+        if system_autostart_entry_exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(HIDDEN_AUTOSTART_ENTRY, encoding="utf-8")
+        else:
+            path.unlink(missing_ok=True)
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(autostart_entry(), encoding="utf-8")

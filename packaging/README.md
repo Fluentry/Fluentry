@@ -6,10 +6,16 @@ with:
     install -Dm644 packaging/dev.fluentry.Fluentry.desktop \
         ~/.local/share/applications/dev.fluentry.Fluentry.desktop
 
-The *autostart* entry is a different file and the app writes it itself, to
-`$XDG_CONFIG_HOME/autostart/fluentry.desktop`, whenever "Launch at startup"
-is switched on. It runs `fluentry --background`, which starts in the tray
-without opening a window.
+The *autostart* entry is a different file. The .deb ships one system-wide
+as `/etc/xdg/autostart/fluentry.desktop` (from
+`packaging/fluentry-autostart.desktop`), so a fresh install starts in the
+tray at every login without any setup. It runs `fluentry --background`,
+which starts in the tray without opening a window.
+
+The in-app "Start Fluentry at login" toggle overrides the system entry
+per user by writing `$XDG_CONFIG_HOME/autostart/fluentry.desktop` — the
+same basename, which is how XDG autostart overriding works — either with
+a real entry (on) or with `Hidden=true` (off).
 
 ## Icons
 

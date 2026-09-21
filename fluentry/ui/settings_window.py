@@ -228,7 +228,7 @@ class SettingsWindow(QDialog):
         launch = ToggleRow(
             tr("Start Fluentry at login"),
             tr("Adds a desktop autostart entry under ~/.config/autostart."),
-            settings.launch_at_startup,
+            self._app.launch_at_startup_enabled(),
         )
         launch.toggled.connect(self._app.set_launch_at_startup)
         startup.add(launch)

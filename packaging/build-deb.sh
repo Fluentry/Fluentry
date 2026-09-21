@@ -47,6 +47,12 @@ chmod 755 "$STAGE/usr/bin/fluentry"
 
 install -Dm644 "$ROOT/packaging/dev.fluentry.Fluentry.desktop" \
     "$STAGE/usr/share/applications/dev.fluentry.Fluentry.desktop"
+# Start in the tray at every login, out of the box. The basename must stay
+# `fluentry.desktop`: the in-app "Start Fluentry at login" toggle overrides
+# this entry by writing a file of the same name (Hidden=true to turn it
+# off) under ~/.config/autostart.
+install -Dm644 "$ROOT/packaging/fluentry-autostart.desktop" \
+    "$STAGE/etc/xdg/autostart/fluentry.desktop"
 for size in 16 22 24 32 48 64 128 256; do
     icon="$ROOT/fluentry/resources/icon-$size.png"
     [ -f "$icon" ] && install -Dm644 "$icon" \

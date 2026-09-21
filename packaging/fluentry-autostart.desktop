@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Fluentry
+Comment=Voice-to-text dictation
+Exec=fluentry --background
+Icon=dev.fluentry.Fluentry
+Terminal=false
+X-GNOME-Autostart-enabled=true

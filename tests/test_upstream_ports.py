@@ -104,6 +104,50 @@ def test_the_autostart_command_quotes_an_awkward_path(monkeypatch):
     assert "'/opt/my apps/python'" in app_module.autostart_command()
 
 
+def test_the_packaged_system_entry_autostarts_until_the_user_says_no(
+    monkeypatch, tmp_path
+):
+    """The .deb ships /etc/xdg/autostart/fluentry.desktop, so a fresh install
+    starts at login with no user file at all. Turning the toggle off must
+    override that entry with Hidden=true, not merely delete the user file —
+    a deleted file would leave the system entry in charge again."""
+    from fluentry import app as app_module
+
+    system = tmp_path / "xdg"
+    (system / "autostart").mkdir(parents=True)
+    (system / "autostart" / "fluentry.desktop").write_text(
+        "[Desktop Entry]\nExec=fluentry --background\n"
+    )
+    monkeypatch.setenv("XDG_CONFIG_DIRS", str(system))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "home"))
+
+    assert app_module.autostart_is_enabled()
+
+    app_module.write_autostart_entry(False)
+    user_entry = app_module.autostart_path()
+    assert user_entry.is_file()
+    assert "Hidden=true" in user_entry.read_text()
+    assert not app_module.autostart_is_enabled()
+
+    app_module.write_autostart_entry(True)
+    assert app_module.autostart_is_enabled()
+
+
+def test_without_a_system_entry_off_means_no_user_file(monkeypatch, tmp_path):
+    """A source checkout has no packaged entry; off should leave nothing."""
+    from fluentry import app as app_module
+
+    monkeypatch.setenv("XDG_CONFIG_DIRS", str(tmp_path / "empty"))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "home"))
+
+    assert not app_module.autostart_is_enabled()
+    app_module.write_autostart_entry(True)
+    assert app_module.autostart_is_enabled()
+    app_module.write_autostart_entry(False)
+    assert not app_module.autostart_path().exists()
+    assert not app_module.autostart_is_enabled()
+
+
 # --- PR #504: history that clears itself ------------------------------------
 
 from datetime import datetime, timedelta  # noqa: E402
