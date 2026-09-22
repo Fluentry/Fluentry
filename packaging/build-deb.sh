@@ -28,6 +28,23 @@ find "$SITE/fluentry" -name '__pycache__' -type d -prune -exec rm -rf {} +
 # runs the default speech model, and python-libei is the input path.
 python3 -m pip install --quiet --no-compile --target "$SITE" \
     --no-deps "onnx-asr>=0.12" "python-libei>=0.5"
+# Two more that Debian packages, but only from forky on - Debian 13
+# "trixie" has neither python3-sounddevice nor python3-huggingface-hub
+# (issue #2). Also pure Python, but unlike the pair above a distro package
+# of the same name can exist, so these go into a private directory that
+# the launcher appends *after* the system path: a real distro package
+# wins where present, and no file ever collides with one. Their own
+# needs (libportaudio2 + python3-cffi for sounddevice; filelock, fsspec,
+# packaging, tqdm, typing-extensions, yaml for huggingface_hub) are
+# Depends in the control file, all present in trixie. huggingface-hub
+# stays below 1.0: the 1.x line moved from requests to httpx, which is
+# not on the dependency list.
+VENDOR="$STAGE/usr/lib/fluentry/vendor"
+mkdir -p "$VENDOR"
+python3 -m pip install --quiet --no-compile --target "$VENDOR" \
+    --no-deps "sounddevice>=0.4.6" "huggingface-hub>=0.24,<1"
+rm -rf "$VENDOR/bin"
+find "$VENDOR" -name '__pycache__' -type d -prune -exec rm -rf {} +
 # The .dist-info directories stay: onnx_asr reads its own version through
 # importlib.metadata at import time, and without that metadata the import
 # raises PackageNotFoundError and the engine looks unavailable while its
@@ -39,6 +56,13 @@ find "$SITE" -name '__pycache__' -type d -prune -exec rm -rf {} +
 
 cat > "$STAGE/usr/bin/fluentry" <<'LAUNCHER'
 #!/usr/bin/env python3
+import sys
+
+# Fallback copies of libraries not every release packages (Debian 13 has
+# no python3-sounddevice or python3-huggingface-hub). Appended last, so
+# an installed distro package still wins.
+sys.path.append("/usr/lib/fluentry/vendor")
+
 from fluentry.__main__ import main
 
 raise SystemExit(main())
@@ -77,10 +101,10 @@ install -Dm755 "$ROOT/packaging/deb/postrm" "$STAGE/DEBIAN/postrm"
 # the package metadata once made onnx_asr unimportable, and the only
 # symptom was an engine reporting itself unavailable while its weights sat
 # on disk - nothing a unit test in the source tree would ever have caught.
-for module in fluentry onnx_asr libei; do
-    if ! PYTHONPATH="$SITE" python3 -c "import $module" 2>/dev/null; then
+for module in fluentry onnx_asr libei sounddevice huggingface_hub; do
+    if ! PYTHONPATH="$SITE:$VENDOR" python3 -c "import $module" 2>/dev/null; then
         echo "staged package is broken: $module does not import" >&2
-        PYTHONPATH="$SITE" python3 -c "import $module" >&2 || true
+        PYTHONPATH="$SITE:$VENDOR" python3 -c "import $module" >&2 || true
         exit 1
     fi
 done

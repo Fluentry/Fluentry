@@ -13,12 +13,18 @@ Depends: python3 (>= 3.11),
          python3-pyside6.qtgui,
          python3-pyside6.qtcore,
          python3-evdev,
-         python3-sounddevice,
+         python3-cffi,
+         python3-filelock,
+         python3-fsspec,
+         python3-packaging,
+         python3-tqdm,
+         python3-typing-extensions,
+         python3-yaml,
          python3-onnxruntime,
-         python3-huggingface-hub,
          python3-venv,
          libei1,
          liboeffis1,
+         libportaudio2,
          wl-clipboard
 Recommends: ydotool,
             libsecret-tools,
@@ -35,6 +41,13 @@ Description: Voice-to-text dictation that types into any application
  RemoteDesktop portal, which asks permission once and remembers it.
  python3-gi is a hard dependency for that reason: without it the grant
  cannot be stored and the permission dialog returns on every launch.
+ .
+ The audio and model-download libraries (sounddevice, huggingface_hub)
+ are carried inside the package because Debian 13 does not ship them;
+ a distro copy, where one exists, still wins over the carried one. Hence
+ the dependencies here are their dependencies: libportaudio2 and
+ python3-cffi for sounddevice, the filelock/fsspec/packaging/tqdm/
+ typing-extensions/yaml set for huggingface_hub.
  .
  The default speech model, Parakeet TDT v3, runs on onnxruntime and is
  downloaded on first use. The Whisper engines need a runtime Debian does
