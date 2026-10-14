@@ -212,7 +212,10 @@ class LibeiBackend:
                 _log.warning("dispatch failed while waiting to resume: %s", error)
                 return None
             for event in self._sender.events:
-                if event.event_type is ei.EventType.DEVICE_RESUMED:
+                if (
+                    event.event_type is ei.EventType.DEVICE_RESUMED
+                    and ei.DeviceCapability.KEYBOARD in event.device.capabilities
+                ):
                     self._device = event.device
                     return self._device
                 if event.event_type is ei.EventType.DISCONNECT:
@@ -248,8 +251,10 @@ class LibeiBackend:
                     event.seat.bind((ei.DeviceCapability.KEYBOARD,))
                 elif event.event_type is ei.EventType.DEVICE_RESUMED:
                     # Devices arrive paused; only a resumed one accepts input.
-                    device = event.device
-                    break
+                    # GNOME also offers a pointer device; key events sent to it are dropped.
+                    if ei.DeviceCapability.KEYBOARD in event.device.capabilities:
+                        device = event.device
+                        break
         if device is None:
             _log.error("the compositor never resumed a keyboard device")
             return None
@@ -268,10 +273,16 @@ class LibeiBackend:
         try:
             self._sender.dispatch()
             for event in self._sender.events:
-                if event.event_type is ei.EventType.DEVICE_PAUSED:
+                if (
+                    event.event_type is ei.EventType.DEVICE_PAUSED
+                    and event.device == self._device
+                ):
                     _log.info("device paused")
                     self._device = None
-                elif event.event_type is ei.EventType.DEVICE_RESUMED:
+                elif (
+                    event.event_type is ei.EventType.DEVICE_RESUMED
+                    and ei.DeviceCapability.KEYBOARD in event.device.capabilities
+                ):
                     self._device = event.device
                 elif event.event_type is ei.EventType.DISCONNECT:
                     _log.warning("libei session disconnected")

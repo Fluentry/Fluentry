@@ -9,6 +9,7 @@ use. Each test pins the behaviour that makes the failure visible instead.
 from __future__ import annotations
 
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
@@ -234,6 +235,24 @@ def test_a_paused_device_is_waited_for_rather_than_renegotiated(monkeypatch):
 
     monkeypatch.setattr(LibeiBackend, "_negotiate_session", must_not_negotiate)
     assert backend._ensure_device() is resumed
+
+
+def test_the_pointer_gnome_also_hands_out_never_replaces_the_keyboard():
+    """Key events sent to GNOME's shared virtual pointer are dropped."""
+    ei = pytest.importorskip("libei.ei", reason="python-libei is optional")
+    keyboard, pointer = FakeDevice(), FakeDevice()
+    pointer.capabilities = (ei.DeviceCapability.POINTER_ABSOLUTE,)
+    backend = LibeiBackend()
+    backend._device = keyboard
+    backend._sender = SimpleNamespace(
+        dispatch=lambda: None,
+        events=[
+            SimpleNamespace(event_type=ei.EventType.DEVICE_PAUSED, device=pointer),
+            SimpleNamespace(event_type=ei.EventType.DEVICE_RESUMED, device=pointer),
+        ],
+    )
+    backend._drain()
+    assert backend._device is keyboard
 
 
 # --- clipboard --------------------------------------------------------------
